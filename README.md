@@ -51,25 +51,25 @@ The system flowchart depicts the physical and logical architecture of the Salon 
 
 ```mermaid
 graph TD
-    ENTRY(("Browser")) --> SPA["React 19 SPA<br/>Vite 8 + TypeScript + Tailwind v4"]
-    SPA --> ROUTER["React Router v7<br/>Client-side Route Matcher"]
+    ENTRY(("User")) --> APP["Web Application"]
+    APP --> ROUTER["Route Matcher"]
     ROUTER --> RESOLVE{"Route Match"}
-    RESOLVE -->|"/"| LANDING["LandingPage<br/>Hero stats / Services grid /<br/>Testimonials / Staff cards / CTA"]
-    RESOLVE -->|"/login"| LOGIN["LoginPage"]
-    RESOLVE -->|"/customer"| CUSTOMER["CustomerDashboard"]
-    RESOLVE -->|"/admin"| ADMIN["AdminDashboard"]
-    RESOLVE -->|"*"| CATCHALL["Redirect to /"]
+    RESOLVE -->|"/"| LANDING["Landing Page<br/>Hero / Services / Staff / CTA"]
+    RESOLVE -->|"/login"| LOGIN["Login Page"]
+    RESOLVE -->|"/customer"| CUSTOMER["Customer Dashboard"]
+    RESOLVE -->|"/admin"| ADMIN["Admin Dashboard"]
+    RESOLVE -->|"*"| CATCHALL["Redirect to Home"]
 
-    CUSTOMER --> CTX["SalonContext<br/>Central State Provider"]
+    CUSTOMER --> CTX["Central State Provider"]
     ADMIN --> CTX
-    CTX --> STORE[(localStorage<br/>salon_appointments<br/>salon_services)]
-    CTX --> SEED[(Seed Data<br/>Staff / Customer /<br/>Menu / Slots)]
-    CTX --> UI["Shared UI Components"]
-    UI --> NAV["Navbar"]
+    CTX --> STORE[(Persistent Storage<br/>Appointments + Services)]
+    CTX --> SEED[(Preloaded Data<br/>Staff / Customers /<br/>Menu Items / Time Slots)]
+    CTX --> UI["UI Component Library"]
+    UI --> NAV["Navigation Bar"]
     UI --> FOOT["Footer"]
-    UI --> SCARD["ServiceCard"]
-    UI --> STATS["StatsCard"]
-    UI --> MODAL["BookingModal"]
+    UI --> SCARD["Service Card"]
+    UI --> STATS["Stats Card"]
+    UI --> MODAL["Booking Modal"]
     NAV --> CTX
     SCARD --> ROUTER
     STATS --> CUSTOMER
@@ -77,8 +77,8 @@ graph TD
     MODAL --> CTX
 
     LANDING --> SCARD
-    ADMIN --> COMP["Admin Sub-components<br/>RevenueChart / CustomerTable /<br/>AppointmentQueue / RecordServiceView"]
-    CUSTOMER --> COMP2["Customer Sub-components<br/>UpcomingAppointments /<br/>ServiceHistoryCarousel"]
+    ADMIN --> COMP["Admin Panel Views<br/>Revenue / Customers /<br/>Appointments / Services"]
+    CUSTOMER --> COMP2["Customer Panel Views<br/>Upcoming Appointments /<br/>Service History"]
     LANDING --> LINK{"Book Now clicked?"}
     LINK -->|Yes| LOGIN
     LINK -->|No| LANDING
@@ -93,7 +93,7 @@ graph TD
     START(("User Arrives")) --> PAGE{"Which page?"}
     PAGE -->|Landing| LBROWSE["Browse services & staff"]
     LBROWSE --> LACT{"Clicks Book Now?"}
-    LACT -->|Yes| LPAGE["Navigate to /login"]
+    LACT -->|Yes| LPAGE["Go to Login page"]
     LACT -->|No| LBROWSE
     PAGE -->|Login| LSELECT{"Select role"}
     LSELECT -->|Customer| CFORM["Show customer form"]
@@ -103,20 +103,20 @@ graph TD
     ENTER --> SUBMIT["Click Login button"]
     SUBMIT --> FVALID{"Email empty?"}
     FVALID -->|Yes| ENTER
-    FVALID -->|No| LOGIN_OP["login(email)"]
-    LOGIN_OP --> ROLE{"email == admin@salon.com<br/>or role == admin?"}
-    ROLE -->|Yes| GOTOADMIN["Navigate to /admin"]
-    ROLE -->|No| GOTOCUST["Navigate to /customer"]
+    FVALID -->|No| LOGIN_OP["Log user into system"]
+    LOGIN_OP --> ROLE{"Is user an admin?"}
+    ROLE -->|Yes| GOTOADMIN["Go to Admin Dashboard"]
+    ROLE -->|No| GOTOCUST["Go to Customer Dashboard"]
     GOTOADMIN --> ADASH(("Admin Dashboard"))
     GOTOCUST --> CDASH(("Customer Dashboard"))
 
     CDASH --> CSTATS["View stats cards<br/>Services / Spent / Upcoming / Loyalty"]
     CSTATS --> UAPTS{"Appointments exist?"}
-    UAPTS -->|No| SHOWEMPTY["Show 'No upcoming' + CTA"]
-    UAPTS -->|Yes| SHOWCARDS["Show appointment cards<br/>Service / Date / Time / Cancel btn"]
+    UAPTS -->|No| SHOWEMPTY["Show empty state + Book CTA"]
+    UAPTS -->|Yes| SHOWCARDS["Show appointment cards<br/>Service / Date / Time / Cancel"]
     SHOWCARDS --> CANCEL{"Cancel clicked?"}
     CANCEL -->|Yes| DIALOG{"Confirm cancellation?"}
-    DIALOG -->|Yes| DOCANCEL["cancelAppointment(id)<br/>status = cancelled"]
+    DIALOG -->|Yes| DOCANCEL["Cancel appointment"]
     DIALOG -->|No| SHOWCARDS
     CANCEL -->|No| NEXT{"View history?"}
     NEXT -->|Yes| FILTER{"Filter by category?"}
@@ -124,7 +124,7 @@ graph TD
     FILTER -->|Specific| FILTHIST["Show filtered services"]
     ALLHIST --> DRAG{"User drags card?"}
     FILTHIST --> DRAG
-    DRAG -->|Yes| OFFSET{"Offset > 50px?"}
+    DRAG -->|Yes| OFFSET{"Dragged far enough?"}
     OFFSET -->|Yes| NEXTCARD["Show next card"]
     OFFSET -->|No| SNAPBACK["Snap to current"]
     NEXTCARD --> DRAG
@@ -146,10 +146,10 @@ graph TD
     CONFIRM -->|No| BACK{"Back?"}
     BACK -->|Yes| S1
     BACK -->|No| S4
-    CONFIRM -->|Yes| BOOKOP["bookAppointment()<br/>status = confirmed"]
-    BOOKOP --> WRITE[(Write to localStorage<br/>salon_appointments)]
+    CONFIRM -->|Yes| BOOKOP["Save booking as confirmed"]
+    BOOKOP --> WRITE[(Save to persistent storage)]
     WRITE --> ANIM["Show success animation"]
-    ANIM --> CLOSE["Close modal after 2s"]
+    ANIM --> CLOSE["Close modal after 2 seconds"]
     CLOSE --> CDASH
 
     ADASH --> TABS{"Select admin tab"}
@@ -158,14 +158,14 @@ graph TD
     TABS -->|Appointments| APPTAB["Appointment queue"]
     TABS -->|Services| SVCTAB["Record service form"]
     TABS -->|Staff| STFTAB["Staff directory"]
-    OV --> OVSTATS["Stats: Active / Revenue / Pending / Services"]
+    OV --> OVSTATS["Show key metrics<br/>Active / Revenue / Pending / Total"]
     OV --> OVCHART["Monthly revenue bar chart"]
-    OV --> OVFEED["Recent activity feed (5 items)"]
+    OV --> OVFEED["Recent activity feed"]
     OV --> OVACT["Quick action buttons"]
     CUSTAB --> CSEARCH{"Search query?"}
     CSEARCH -->|Yes| CFILTER["Filter customers"]
-    CSEARCH -->|No| CSHOW["Show all 6 customers"]
-    CFILTER --> CTABLE["Table: Name / Status / Visits / LTV"]
+    CSEARCH -->|No| CSHOW["Show all customers"]
+    CFILTER --> CTABLE["Customer table<br/>Name / Status / Visits / LTV"]
     CSHOW --> CTABLE
     CTABLE --> BADGE{"Status?"}
     BADGE -->|Active| BGREEN["Green badge"]
@@ -173,30 +173,30 @@ graph TD
     BADGE -->|Inactive| BRED["Red badge"]
     APPTAB --> ALIST["List confirmed appointments"]
     ALIST --> AROW["Appointment row<br/>Service / Customer / Stylist / Date"]
-    AROW --> ACOMP{"Complete?"}
-    ACOMP -->|Yes| DOCOMP["completeAppointment(id)"]
+    AROW --> ACOMP{"Mark as completed?"}
+    ACOMP -->|Yes| DOCOMP["Complete appointment"]
     ACOMP -->|No| AROW
-    DOCOMP --> ACOMPLETE["Status = completed"]
-    ACOMPLETE --> ARECORD["recordService() triggered"]
-    ARECORD --> WRITE2[(Write to localStorage<br/>salon_services)]
-    SVCTAB --> SFORM["Fill form: email / type /<br/>stylist / category / cost / duration"]
-    SFORM --> SCATEGORY{"Category?"}
+    DOCOMP --> ACOMPLETE["Set status = completed"]
+    ACOMPLETE --> ARECORD["Log service record"]
+    ARECORD --> WRITE2[(Save to persistent storage)]
+    SVCTAB --> SFORM["Fill form fields<br/>Email / Type / Stylist /<br/>Category / Cost / Duration"]
+    SFORM --> SCATEGORY{"Category selected?"}
     SCATEGORY --> HAIR["Hair"]
     SCATEGORY --> COLOR["Color"]
     SCATEGORY --> NAILS["Nails"]
     SCATEGORY --> TREAT["Treatment"]
     SCATEGORY --> SSBMIT{"Submit?"}
     SSBMIT -->|No| SFORM
-    SSBMIT -->|Yes| SVALID{"All fields valid?"}
+    SSBMIT -->|Yes| SVALID{"All fields filled?"}
     SVALID -->|No| SFORM
-    SVALID -->|Yes| RECORDOP["recordService(formData)"]
-    RECORDOP --> GRADIENT["Assign gradient by category"]
-    GRADIENT --> PREPEND["Prepend to services[]"]
+    SVALID -->|Yes| RECORDOP["Save service record"]
+    RECORDOP --> GRADIENT["Assign color by category"]
+    GRADIENT --> PREPEND["Add to services list"]
     PREPEND --> WRITE2
-    PREPEND --> TOAST["Show green toast"]
+    PREPEND --> TOAST["Show success notification"]
     TOAST --> SRESET["Reset form"]
     SRESET --> SFORM
-    STFTAB --> SGRID["Staff card grid<br/>Image / Name / Role / Bio /<br/>Specialties / Rating / Job count"]
+    STFTAB --> SGRID["Staff directory grid<br/>Photo / Name / Role / Bio /<br/>Specialties / Rating / Jobs done"]
 ```
 
 ## Project Structure
