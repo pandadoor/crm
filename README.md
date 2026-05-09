@@ -1,14 +1,14 @@
 # Salon CRM
 
-A premium salon CRM with customer booking, admin dashboard, analytics, and staff management — built with React 19, TypeScript, Tailwind CSS v4, and Vite.
+A premium salon CRM with customer booking, admin dashboard, analytics, and staff management -- built with React 19, TypeScript, Tailwind CSS v4, and Vite.
 
 ## Features
 
-- **Landing Page** — Hero stats, services grid with category filter, testimonials, staff directory
-- **Customer Dashboard** — Stats cards, service history carousel with drag/swipe, upcoming appointments, booking modal (4-step flow)
-- **Admin Dashboard** — Revenue chart, customer database with search, appointment queue with complete/cancel, service recording, staff directory
-- **Authentication** — Role selector (Customer/Admin), demo credentials hint
-- **Responsive** — Full mobile support with glassmorphism UI
+- **Landing Page** -- Hero stats, services grid with category filter, testimonials, staff directory
+- **Customer Dashboard** -- Stats cards, service history carousel with drag/swipe, upcoming appointments, booking modal (4-step flow)
+- **Admin Dashboard** -- Revenue chart, customer database with search, appointment queue with complete/cancel, service recording, staff directory
+- **Authentication** -- Role selector (Customer/Admin), demo credentials hint
+- **Responsive** -- Full mobile support with glassmorphism UI
 
 ## Stack
 
@@ -47,240 +47,139 @@ Open http://localhost:5173 in your browser.
 
 ## System Architecture
 
-### System Flowchart (C4 Level 2 -- Container)
+### System Flowchart (Production Target)
 
 ```mermaid
-graph TB
-    subgraph Client["Client Layer (Browser)"]
-        REACT["React 19 SPA<br/>TypeScript + Tailwind v4"]
-        ROUTER["React Router v7<br/>Client-side Routing"]
-        CONTEXT["SalonContext<br/>State Management"]
-    end
-
-    subgraph Gateway["API Gateway"]
-        VITE["Vite 8 Dev Server<br/>or Nginx/CDN (Prod)"]
-    end
-
-    subgraph Services["Backend Services (Production)"]
-        AUTH["Auth Service<br/>JWT / OAuth2"]
-        BOOKING["Booking Service<br/>Appointment CRUD"]
-        ANALYTICS["Analytics Service<br/>Revenue Reports"]
-        NOTIFY["Notification Service<br/>Email / SMS"]
-    end
-
-    subgraph Storage["Data Layer"]
-        DB[("PostgreSQL<br/>Primary Database")]
-        CACHE[("Redis<br/>Session Cache")]
-        FILESTORE[("S3 / Cloud Storage<br/>Images & Assets")]
-    end
-
-    REACT --> ROUTER
-    ROUTER --> CONTEXT
-    CONTEXT --> VITE
-    VITE --> AUTH
-    VITE --> BOOKING
-    VITE --> ANALYTICS
-    BOOKING --> DB
-    ANALYTICS --> DB
-    AUTH --> CACHE
-    AUTH --> DB
-    NOTIFY --> DB
-    BOOKING --> NOTIFY
+graph TD
+    START(("User"))
+    START --> SPA["React 19 SPA<br/>TypeScript + Tailwind v4"]
+    SPA --> ROUTER["React Router v7<br/>Client Routing"]
+    ROUTER --> PAGES{"Route Match"}
+    PAGES -->|"/"| LANDING["LandingPage"]
+    PAGES -->|"/login"| LOGIN["LoginPage"]
+    PAGES -->|"/customer"| CUST["CustomerDashboard"]
+    PAGES -->|"/admin"| ADMIN["AdminDashboard"]
+    LOGIN --> AUTH["Auth: login(email)"]
+    AUTH --> NAV{Role?}
+    NAV -->|Customer| NAVCUST["Navigate /customer"]
+    NAV -->|Admin| NAVADMIN["Navigate /admin"]
+    CUST --> CONTEXT["SalonContext"]
+    ADMIN --> CONTEXT
+    CONTEXT --> STORE[("localStorage<br/>Persist State")]
+    CONTEXT --> SEED[("In-Memory<br/>Seed Data")]
 ```
 
-### Current Architecture (MVP -- Browser-Only with LocalStorage)
+### Authentication Flowchart
 
 ```mermaid
-graph TB
-    subgraph Browser["Browser (Single Page Application)"]
-        REACT["React 19 + TypeScript"]
-        ROUTER["React Router v7<br/>/  /login  /customer  /admin"]
-        CONTEXT["SalonContext Provider"]
-        COMP["Components<br/>Navbar, Footer, ServiceCard<br/>StatsCard, BookingModal"]
-        PAGES["Pages<br/>LandingPage, Login<br/>CustomerDashboard, AdminDashboard"]
-    end
-
-    subgraph Storage["Client Storage"]
-        LS[("localStorage<br/>salon_services<br/>salon_appointments")]
-        MEM[("In-Memory State<br/>currentUser<br/>static seed data")]
-    end
-
-    REACT --> ROUTER
-    ROUTER --> PAGES
-    PAGES --> COMP
-    COMP --> CONTEXT
-    CONTEXT --> LS
-    CONTEXT --> MEM
-
-    style Storage fill:#1a1a2e,stroke:#8b5cf6
-    style Browser fill:#0a0a0a,stroke:#8b5cf6
+graph TD
+    START(("Visitor")) --> LOGINPG["Open /login"]
+    LOGINPG --> SELECT{"Select Role"}
+    SELECT -->|Customer| CUSTFORM["Show Customer Form"]
+    SELECT -->|Admin| ADMINFORM["Show Admin Form"]
+    CUSTFORM --> FILL["Enter email + password"]
+    ADMINFORM --> FILL
+    FILL --> SUBMIT["Submit form"]
+    SUBMIT --> CHECK{Valid?}
+    CHECK -->|Yes| LOGIN["login(email)<br/>setCurrentUser(email)"]
+    CHECK -->|No| ERROR["Show error"]
+    ERROR --> FILL
+    LOGIN --> DECIDE{"email == admin@salon.com<br/>or role == admin?"}
+    DECIDE -->|Yes| GOTODASH["Navigate /admin"]
+    DECIDE -->|No| GOTOCUST["Navigate /customer"]
+    GOTODASH --> DASH(("Admin Dashboard"))
+    GOTOCUST --> CUSTDASH(("Customer Dashboard"))
 ```
 
-### Production Database Schema (ERD)
+### Booking Process Flowchart
 
 ```mermaid
-erDiagram
-    customers ||--o{ appointments : "has"
-    customers ||--o{ service_history : "receives"
-    staff ||--o{ appointments : "assigned to"
-    staff ||--o{ service_history : "performed"
-
-    customers {
-        int id PK
-        varchar name
-        varchar email
-        varchar phone
-        varchar password_hash
-        varchar status
-        timestamp join_date
-        int total_visits
-        decimal lifetime_value
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    staff {
-        int id PK
-        varchar name
-        varchar role
-        decimal rating
-        text[] specialties
-        varchar image_url
-        text bio
-        timestamp created_at
-    }
-
-    appointments {
-        int id PK
-        int customer_id FK
-        int staff_id FK
-        varchar service_name
-        varchar category
-        decimal cost
-        varchar duration
-        date date
-        time time
-        varchar status
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    service_history {
-        int id PK
-        int appointment_id FK
-        int customer_id FK
-        int staff_id FK
-        varchar service_type
-        varchar category
-        decimal cost
-        varchar duration
-        date date
-        varchar gradient
-        timestamp created_at
-    }
+graph TD
+    START(("Customer")) --> OPEN["Open BookingModal"]
+    OPEN --> STEP1["Step 1: Choose Service<br/>Filter by category"]
+    STEP1 --> PICKED{"Service selected?"}
+    PICKED -->|No| STEP1
+    PICKED -->|Yes| STEP2["Step 2: Choose Stylist<br/>Filtered by specialty"]
+    STEP2 --> STYLED{"Stylist selected?"}
+    STYLED -->|No| STEP2
+    STYLED -->|Yes| STEP3["Step 3: Pick Date & Time<br/>Calendar + time slots"]
+    STEP3 --> DTSET{"Date + Time selected?"}
+    DTSET -->|No| STEP3
+    DTSET -->|Yes| STEP4["Step 4: Review & Confirm"]
+    STEP4 --> CONFIRM{"User clicks Confirm?"}
+    CONFIRM -->|No| BACK{"Click Back?"}
+    BACK -->|Yes| PREV["Go to previous step"]
+    BACK -->|No| STEP4
+    CONFIRM -->|Yes| BOOK["bookAppointment()<br/>id = Date.now()<br/>status = confirmed"]
+    BOOK --> STORE[("localStorage<br/>salon_appointments")]
+    STORE --> DONE["Show success animation"]
+    DONE --> TIMEOUT["Wait 2 seconds"]
+    TIMEOUT --> CLOSE["Close modal"]
+    CLOSE --> END(("Dashboard"))
 ```
 
-### Authentication Flow (Sequence)
+### Appointment Lifecycle Flowchart
 
 ```mermaid
-sequenceDiagram
-    participant Browser
-    participant Router as React Router
-    participant Context as SalonContext
-    participant Store as localStorage
-
-    Browser->>Router: GET /login
-    Router->>Browser: Render Login Page
-    Browser->>Browser: Select Role (Customer/Admin)
-    Browser->>Browser: Enter Email + Password
-    Browser->>Context: login(email)
-    Context->>Store: setCurrentUser(email)
-    Context->>Router: Navigate to /customer or /admin
-    Router->>Browser: Render Protected Dashboard
-
-    Browser->>Context: logout()
-    Context->>Store: clear currentUser
-    Context->>Router: Navigate to /login
-    Router->>Browser: Render Login Page
+graph TD
+    START(("Booking Submitted")) --> CONFIRMED["Confirmed<br/>status = confirmed"]
+    CONFIRMED --> CANCEL{"Customer cancels?"}
+    CANCEL -->|Yes| CANCELED["Cancelled<br/>status = cancelled"]
+    CANCEL -->|No| COMPLETE{"Admin completes?"}
+    COMPLETE -->|Yes| COMPLETED["Completed<br/>status = completed"]
+    COMPLETE -->|No| CONFIRMED
+    COMPLETED --> RECORD["recordService()<br/>creates service history entry"]
+    CANCELED --> ENDARC(("Archived"))
+    COMPLETED --> ENDARC
+    RECORD --> ENDHIST(("Service History"))
 ```
 
-### Booking Process (Sequence)
+### Service Recording Flowchart (Admin)
 
 ```mermaid
-sequenceDiagram
-    actor User
-    participant Modal as BookingModal
-    participant Context as SalonContext
-    participant Store as localStorage
-
-    User->>Modal: Click "Book Now"
-    Modal->>Modal: Step 1: Select Service (filtered by category)
-    User->>Modal: Pick service
-    Modal->>Modal: Step 2: Select Stylist (filtered by specialty)
-    User->>Modal: Pick stylist
-    Modal->>Modal: Step 3: Pick Date + Time (calendar + time slots)
-    User->>Modal: Select date and time
-    Modal->>Modal: Step 4: Review + Confirm
-    User->>Modal: Confirm Booking
-    Modal->>Context: bookAppointment({service, stylist, date, time, cost, ...})
-    Context->>Context: Generate id (Date.now), status=confirmed, createdAt
-    Context->>Store: localStorage.setItem(salon_appointments, ...)
-    Context->>Modal: Return true
-    Modal->>Modal: Show confirmation animation (checkmark)
-    Modal->>Modal: 2-second timeout
-    Modal->>User: Close modal
+graph TD
+    START(("Admin")) --> TAB["Click Services tab"]
+    TAB --> FORM["Load RecordServiceView"]
+    FORM --> CUST["Enter customer email"]
+    CUST --> TYPE["Enter service type"]
+    TYPE --> STYL["Enter stylist name"]
+    STYL --> CAT["Select category']
+    CAT --> COST["Enter cost']
+    COST --> DUR["Enter duration"]
+    DUR --> SUBMIT{"Submit form?"}
+    SUBMIT -->|No| FORM
+    SUBMIT -->|Yes| VALIDATE{"All fields valid?"}
+    VALIDATE -->|No| FORM
+    VALIDATE -->|Yes| RECORD["recordService(formData)"]
+    RECORD --> GENID["Generate id = Date.now()"]
+    GENID --> GRADIENT["Assign gradient by category"]
+    GRADIENT --> PREPEND["Prepend to services[]"]
+    PREPEND --> PERSIST[("localStorage<br/>salon_services")]
+    PERSIST --> TOAST["Show green success toast"]
+    TOAST --> RESET["Reset form fields"]
+    RESET --> WAIT["Wait 3 seconds"]
+    WAIT --> END(("Ready for next entry"))
 ```
 
-### Appointment Lifecycle (State Diagram)
+### Routing Flowchart
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Confirmed: Customer books via 4-step modal
-    Confirmed --> Completed: Admin clicks "Complete"
-    Confirmed --> Cancelled: Customer clicks "Cancel"
-    Completed --> [*]: Archived (service history)
-    Cancelled --> [*]: Archived
+graph TD
+    START(("Browser Request")) --> ROUTER["React Router v7"]
+    ROUTER --> MATCH{"Match route"}
+    MATCH -->|"/"| LANDING["LandingPage<br/>Hero, Services, Staff, CTA, Footer"]
+    MATCH -->|"/login"| LOGIN["LoginPage<br/>Role selector, Auth form"]
+    MATCH -->|"/customer"| CUST["CustomerDashboard<br/>Stats, History carousel, Booking"]
+    MATCH -->|"/admin"| ADMIN["AdminDashboard<br/>Analytics, Queue, Customers, Staff"]
+    MATCH -->|"*"| CATCH["Navigate to /"]
+    LANDING --> RENDER(("Render Page"))
+    LOGIN --> RENDER
+    CUST --> RENDER
+    ADMIN --> RENDER
+    CATCH --> ROUTER
 ```
 
-### Service Recording Flow (Admin)
-
-```mermaid
-sequenceDiagram
-    actor Admin
-    participant Form as RecordServiceView
-    participant Context as SalonContext
-    participant Store as localStorage
-
-    Admin->>Form: Navigate to Services tab
-    Admin->>Form: Fill customer email
-    Admin->>Form: Enter service type, stylist, cost, duration, category
-    Admin->>Form: Submit form
-    Form->>Context: recordService(formData)
-    Context->>Context: Generate id (Date.now)
-    Context->>Context: Assign gradient by category
-    Context->>Context: Prepend to services array
-    Context->>Store: localStorage.setItem(salon_services, ...)
-    Context->>Form: Success
-    Form->>Admin: Green toast notification (3s)
-    Form->>Form: Reset form fields
-```
-
-### Routing Map
-
-```mermaid
-graph LR
-    ROOT["/"] --> LANDING["LandingPage<br/>Hero, Services, Staff, CTA"]
-    LOGIN["/login"] --> LOGINPG["LoginPage<br/>Role Select, Auth Form"]
-    CUST["/customer"] --> CDASH["CustomerDashboard<br/>Stats, History, Booking"]
-    ADMIN["/admin"] --> ADASH["AdminDashboard<br/>Analytics, Queue, Staff"]
-    CATCH["*"] --> REDIR["Navigate to /"]
-
-    style ROOT fill:#1a1a2e,stroke:#8b5cf6
-    style LOGIN fill:#1a1a2e,stroke:#8b5cf6
-    style CUST fill:#1a1a2e,stroke:#8b5cf6
-    style ADMIN fill:#1a1a2e,stroke:#8b5cf6
-    style CATCH fill:#1a1a2e,stroke:#ef4444
-```
+## Project Structure
 
 ```
 src/
