@@ -47,156 +47,153 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart depicts the physical and logical architecture of the Salon CRM -- the SPA shell, route resolution, page components, shared UI library, central state provider, and persistence stores.
+The system flowchart illustrates how browser requests, page processes, databases, and display outputs interact within the Salon CRM.
 
 ```mermaid
 graph TD
-    ENTRY(("User")) --> APP["Web Application"]
-    APP --> ROUTER["Route Matcher"]
-    ROUTER --> RESOLVE{"Route Match"}
-    RESOLVE -->|"/"| LANDING["Landing Page<br/>Hero / Services / Staff / CTA"]
-    RESOLVE -->|"/login"| LOGIN["Login Page"]
-    RESOLVE -->|"/customer"| CUSTOMER["Customer Dashboard"]
-    RESOLVE -->|"/admin"| ADMIN["Admin Dashboard"]
-    RESOLVE -->|"*"| CATCHALL["Redirect to Home"]
-
-    CUSTOMER --> CTX["Central State Provider"]
-    ADMIN --> CTX
-    CTX --> STORE[(Persistent Storage<br/>Appointments + Services)]
-    CTX --> SEED[(Preloaded Data<br/>Staff / Customers /<br/>Menu Items / Time Slots)]
-    CTX --> UI["UI Component Library"]
-    UI --> NAV["Navigation Bar"]
-    UI --> FOOT["Footer"]
-    UI --> SCARD["Service Card"]
-    UI --> STATS["Stats Card"]
-    UI --> MODAL["Booking Modal"]
-    NAV --> CTX
-    SCARD --> ROUTER
-    STATS --> CUSTOMER
-    STATS --> ADMIN
-    MODAL --> CTX
-
-    LANDING --> SCARD
-    ADMIN --> COMP["Admin Panel Views<br/>Revenue / Customers /<br/>Appointments / Services"]
-    CUSTOMER --> COMP2["Customer Panel Views<br/>Upcoming Appointments /<br/>Service History"]
-    LANDING --> LINK{"Book Now clicked?"}
-    LINK -->|Yes| LOGIN
-    LINK -->|No| LANDING
+    SYS_START([Start]) --> REQ_IN[/Browser Sends URL Request/]
+    REQ_IN --> RESOLVE[Resolve URL to Matching Route]
+    RESOLVE --> FOUND{Route match<br/>found?}
+    FOUND -->|Yes| LOAD[Load Page Components]
+    FOUND -->|No| HOME_REDIR[Redirect to Home Page]
+    HOME_REDIR --> RESOLVE
+    LOAD --> CHECK_AUTH{Page requires<br/>login?}
+    CHECK_AUTH -->|No| PUBLIC[/Landing Page<br/>Displayed to User/]
+    CHECK_AUTH -->|Yes| LOGIN[/Login Form<br/>Displayed to User/]
+    LOGIN --> USER_TYPES>User Types<br/>Email and Password]
+    USER_TYPES --> INSPECT_LOGIN((Route<br/>Connector))
+    INSPECT_LOGIN --> FILLED{Email field<br/>filled?}
+    FILLED -->|No| USER_TYPES
+    FILLED -->|Yes| LOG_USER_IN[Log User Into<br/>the System]
+    LOG_USER_IN --> ADMIN_YES{Is user the<br/>salon admin?}
+    ADMIN_YES -->|Yes| ADMIN_DASH[[Admin Dashboard<br/>Subprocess]]
+    ADMIN_YES -->|No| CUSTOMER_DASH[[Customer Dashboard<br/>Subprocess]]
+    ADMIN_DASH --> ADMIN_TOOLS[Run Admin<br/>Operations]
+    CUSTOMER_DASH --> CUSTOMER_TOOLS[Run Customer<br/>Operations]
+    ADMIN_TOOLS --> ADMIN_VIEW[/Admin Dashboard<br/>Displayed on Screen/]
+    CUSTOMER_TOOLS --> CUSTOMER_VIEW[/Customer Dashboard<br/>Displayed on Screen/]
+    ADMIN_VIEW --> MANAGE_ADM[Admin Manages<br/>Revenue / Customers /<br/>Appointments / Services]
+    CUSTOMER_VIEW --> MANAGE_CUST[Customer Browses<br/>Stats / History /<br/>Bookings / Profile]
+    MANAGE_ADM --> STORE_ADM[(Persistent Data<br/>Database)]
+    MANAGE_CUST --> STORE_CUST[(User Records<br/>Database)]
+    STORE_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
+    STORE_CUST --> SEED_IN
+    SEED_IN --> RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
+    RETRIEVE --> MERGE(("Merge Point"))
+    MERGE --> FINAL[/Final Page Output<br/>Displayed to User/]
+    FINAL --> SYS_END([End])
 ```
 
 ## Process Flowchart
 
-The process flowchart follows the linear step-by-step user journey through the application -- from entry to authentication, booking, appointment management, and service recording -- with all decision branches explicitly shown.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through authentication, appointment booking, and service recording, with all decision branches explicitly labeled.
 
 ```mermaid
 graph TD
-    START(("User Arrives")) --> PAGE{"Which page?"}
-    PAGE -->|Landing| LBROWSE["Browse services & staff"]
-    LBROWSE --> LACT{"Clicks Book Now?"}
-    LACT -->|Yes| LPAGE["Go to Login page"]
-    LACT -->|No| LBROWSE
-    PAGE -->|Login| LSELECT{"Select role"}
-    LSELECT -->|Customer| CFORM["Show customer form"]
-    LSELECT -->|Admin| AFORM["Show admin form"]
-    CFORM --> ENTER["Enter email + password"]
-    AFORM --> ENTER
-    ENTER --> SUBMIT["Click Login button"]
-    SUBMIT --> FVALID{"Email empty?"}
-    FVALID -->|Yes| ENTER
-    FVALID -->|No| LOGIN_OP["Log user into system"]
-    LOGIN_OP --> ROLE{"Is user an admin?"}
-    ROLE -->|Yes| GOTOADMIN["Go to Admin Dashboard"]
-    ROLE -->|No| GOTOCUST["Go to Customer Dashboard"]
-    GOTOADMIN --> ADASH(("Admin Dashboard"))
-    GOTOCUST --> CDASH(("Customer Dashboard"))
+    P_START([Start]) --> LOAD_APP{{Load Application<br/>Initialize Data}}
+    LOAD_APP --> BROWSE_LP[Browse Landing Page<br/>View Services and Staff]
+    BROWSE_LP --> BOOK_NOW{Book Now<br/>button clicked?}
+    BOOK_NOW -->|Yes| GO_LOGIN[Open Login Page]
+    BOOK_NOW -->|No| BROWSE_LP
+    GO_LOGIN --> PICK_ROLE[Select User Role<br/>Customer or Admin]
+    PICK_ROLE --> TYPE_EMAIL[Type Email<br/>Address into Form]
+    TYPE_EMAIL --> INSPECT_LOGIN((Inspect<br/>Login Input))
+    INSPECT_LOGIN --> EMAIL_OK{Email address<br/>provided?}
+    EMAIL_OK -->|No| TYPE_EMAIL
+    EMAIL_OK -->|Yes| AUTH_USER[Log User Into<br/>the System]
+    AUTH_USER --> CHECK_ROLE{Is this the<br/>salon admin?}
+    CHECK_ROLE -->|Yes| VIEW_ADMIN[Display Admin<br/>Dashboard Screen]
+    CHECK_ROLE -->|No| VIEW_CUST[Display Customer<br/>Dashboard Screen]
+    VIEW_ADMIN --> CHOOSE_TAB[Select Admin<br/>Function Tab]
+    CHOOSE_TAB --> TAB_OVERVIEW{Tab is<br/>Overview?}
+    TAB_OVERVIEW -->|Yes| SHOW_OVERVIEW[Display Revenue<br/>Metrics and Chart]
+    TAB_OVERVIEW -->|No| TAB_CUSTOMERS{Tab is<br/>Customers?}
+    TAB_CUSTOMERS -->|Yes| OPEN_CUSTOMERS[Open Customer<br/>Directory View]
+    TAB_CUSTOMERS -->|No| TAB_APPOINTMENTS{Tab is<br/>Appointments?}
+    TAB_APPOINTMENTS -->|Yes| OPEN_QUEUE[Open Appointment<br/>Queue View]
+    TAB_APPOINTMENTS -->|No| TAB_SERVICES{Tab is<br/>Services?}
+    TAB_SERVICES -->|Yes| OPEN_RECORD[Open Service<br/>Recording Form]
+    TAB_SERVICES -->|No| TAB_STAFF{Tab is<br/>Staff?}
+    TAB_STAFF -->|Yes| OPEN_STAFF[Open Staff<br/>Directory View]
+    OPEN_CUSTOMERS --> TYPE_SEARCH[Type Customer<br/>Name or Email]
+    TYPE_SEARCH --> FOUND_ANY{Matches<br/>found?}
+    FOUND_ANY -->|No| TYPE_SEARCH
+    FOUND_ANY -->|Yes| SHOW_TABLE[Display Matching<br/>Customer Rows]
+    OPEN_QUEUE --> VIEW_APT[Review Appointment<br/>Details in Queue]
+    VIEW_APT --> MARK_DONE{Mark this<br/>appointment done?}
+    MARK_DONE -->|Yes| COMPLETE_IT[Set Appointment<br/>Status to Completed]
+    MARK_DONE -.->|No| VIEW_APT
+    OPEN_RECORD --> FILL_FORM[Fill Service Form<br/>Email / Type / Stylist /<br/>Category / Cost / Duration]
+    FILL_FORM --> PICK_CAT{Choose service<br/>category}
+    PICK_CAT --> CAT_HAIR[Hair]
+    PICK_CAT --> CAT_COLOR[Color]
+    PICK_CAT --> CAT_NAILS[Nails]
+    PICK_CAT --> CAT_TREAT[Treatment]
+    CAT_HAIR --> SEND_FORM[Submit the<br/>Service Form]
+    CAT_COLOR --> SEND_FORM
+    CAT_NAILS --> SEND_FORM
+    CAT_TREAT --> SEND_FORM
+    SEND_FORM --> INSPECT_FORM((Inspect<br/>Form Fields))
+    INSPECT_FORM --> ALL_FILLED{All fields<br/>completed?}
+    ALL_FILLED -->|No| FILL_FORM
+    ALL_FILLED -->|Yes| SAVE_SVC_REC[Save Service Record<br/>and Assign Category Color]
+    SAVE_SVC_REC --> SHOW_TOAST[Display Success<br/>Notification Message]
+    SHOW_TOAST --> CLEAR_FORM[Clear the<br/>Form Fields]
+    CLEAR_FORM --> RECORD_MORE{Record another<br/>service?}
+    RECORD_MORE -->|Yes| FILL_FORM
+    RECORD_MORE -.->|No| ADMIN_JUNCTION
+    SHOW_OVERVIEW --> ADMIN_JUNCTION((Admin<br/>Junction))
+    SHOW_TABLE --> ADMIN_JUNCTION
+    OPEN_STAFF --> ADMIN_JUNCTION
+    COMPLETE_IT --> ADMIN_JUNCTION
+    ADMIN_JUNCTION --> DO_MORE_ADM{Perform another<br/>admin action?}
+    DO_MORE_ADM -->|Yes| CHOOSE_TAB
+    DO_MORE_ADM -->|No| PROCEED
 
-    CDASH --> CSTATS["View stats cards<br/>Services / Spent / Upcoming / Loyalty"]
-    CSTATS --> UAPTS{"Appointments exist?"}
-    UAPTS -->|No| SHOWEMPTY["Show empty state + Book CTA"]
-    UAPTS -->|Yes| SHOWCARDS["Show appointment cards<br/>Service / Date / Time / Cancel"]
-    SHOWCARDS --> CANCEL{"Cancel clicked?"}
-    CANCEL -->|Yes| DIALOG{"Confirm cancellation?"}
-    DIALOG -->|Yes| DOCANCEL["Cancel appointment"]
-    DIALOG -->|No| SHOWCARDS
-    CANCEL -->|No| NEXT{"View history?"}
-    NEXT -->|Yes| FILTER{"Filter by category?"}
-    FILTER -->|All| ALLHIST["Show all services"]
-    FILTER -->|Specific| FILTHIST["Show filtered services"]
-    ALLHIST --> DRAG{"User drags card?"}
-    FILTHIST --> DRAG
-    DRAG -->|Yes| OFFSET{"Dragged far enough?"}
-    OFFSET -->|Yes| NEXTCARD["Show next card"]
-    OFFSET -->|No| SNAPBACK["Snap to current"]
-    NEXTCARD --> DRAG
-    SNAPBACK --> DRAG
-    DRAG -->|No| DISPLAY["Show card details<br/>Type / Cost / Stylist / Date / Duration"]
-    DISPLAY --> BOOKACT{"Click + New?"}
-    BOOKACT -->|Yes| BOOKING["Open Booking Modal"]
-    BOOKING --> S1["Step 1: Choose Service<br/>Category tabs + service list"]
-    S1 --> S1CHK{"Service selected?"}
-    S1CHK -->|No| S1
-    S1CHK -->|Yes| S2["Step 2: Choose Stylist<br/>Filtered by specialty"]
-    S2 --> S2CHK{"Stylist selected?"}
-    S2CHK -->|No| S2
-    S2CHK -->|Yes| S3["Step 3: Pick Date & Time<br/>Calendar + time slot grid"]
-    S3 --> S3CHK{"Date & time selected?"}
-    S3CHK -->|No| S3
-    S3CHK -->|Yes| S4["Step 4: Review & Confirm<br/>Service / Stylist / Date / Cost"]
-    S4 --> CONFIRM{"Confirm?"}
-    CONFIRM -->|No| BACK{"Back?"}
-    BACK -->|Yes| S1
-    BACK -->|No| S4
-    CONFIRM -->|Yes| BOOKOP["Save booking as confirmed"]
-    BOOKOP --> WRITE[(Save to persistent storage)]
-    WRITE --> ANIM["Show success animation"]
-    ANIM --> CLOSE["Close modal after 2 seconds"]
-    CLOSE --> CDASH
-
-    ADASH --> TABS{"Select admin tab"}
-    TABS -->|Overview| OV["Overview dashboard"]
-    TABS -->|Customers| CUSTAB["Customer database"]
-    TABS -->|Appointments| APPTAB["Appointment queue"]
-    TABS -->|Services| SVCTAB["Record service form"]
-    TABS -->|Staff| STFTAB["Staff directory"]
-    OV --> OVSTATS["Show key metrics<br/>Active / Revenue / Pending / Total"]
-    OV --> OVCHART["Monthly revenue bar chart"]
-    OV --> OVFEED["Recent activity feed"]
-    OV --> OVACT["Quick action buttons"]
-    CUSTAB --> CSEARCH{"Search query?"}
-    CSEARCH -->|Yes| CFILTER["Filter customers"]
-    CSEARCH -->|No| CSHOW["Show all customers"]
-    CFILTER --> CTABLE["Customer table<br/>Name / Status / Visits / LTV"]
-    CSHOW --> CTABLE
-    CTABLE --> BADGE{"Status?"}
-    BADGE -->|Active| BGREEN["Green badge"]
-    BADGE -->|At Risk| BYELLOW["Yellow badge"]
-    BADGE -->|Inactive| BRED["Red badge"]
-    APPTAB --> ALIST["List confirmed appointments"]
-    ALIST --> AROW["Appointment row<br/>Service / Customer / Stylist / Date"]
-    AROW --> ACOMP{"Mark as completed?"}
-    ACOMP -->|Yes| DOCOMP["Complete appointment"]
-    ACOMP -->|No| AROW
-    DOCOMP --> ACOMPLETE["Set status = completed"]
-    ACOMPLETE --> ARECORD["Log service record"]
-    ARECORD --> WRITE2[(Save to persistent storage)]
-    SVCTAB --> SFORM["Fill form fields<br/>Email / Type / Stylist /<br/>Category / Cost / Duration"]
-    SFORM --> SCATEGORY{"Category selected?"}
-    SCATEGORY --> HAIR["Hair"]
-    SCATEGORY --> COLOR["Color"]
-    SCATEGORY --> NAILS["Nails"]
-    SCATEGORY --> TREAT["Treatment"]
-    SCATEGORY --> SSBMIT{"Submit?"}
-    SSBMIT -->|No| SFORM
-    SSBMIT -->|Yes| SVALID{"All fields filled?"}
-    SVALID -->|No| SFORM
-    SVALID -->|Yes| RECORDOP["Save service record"]
-    RECORDOP --> GRADIENT["Assign color by category"]
-    GRADIENT --> PREPEND["Add to services list"]
-    PREPEND --> WRITE2
-    PREPEND --> TOAST["Show success notification"]
-    TOAST --> SRESET["Reset form"]
-    SRESET --> SFORM
-    STFTAB --> SGRID["Staff directory grid<br/>Photo / Name / Role / Bio /<br/>Specialties / Rating / Jobs done"]
+    VIEW_CUST --> SHOW_STATS[Display Four<br/>Stats Cards]
+    SHOW_STATS --> HAS_APT{Upcoming<br/>appointments exist?}
+    HAS_APT -->|No| SHOW_NONE[Display Empty<br/>Appointment Message]
+    HAS_APT -->|Yes| SHOW_CARDS[Display Appointment<br/>Cards with Cancel Button]
+    SHOW_CARDS --> HIT_CANCEL{Cancel an<br/>appointment?}
+    HIT_CANCEL -->|Yes| ASK_CONFIRM{User confirms<br/>cancellation?}
+    ASK_CONFIRM -->|Yes| DO_CANCEL_IT[Cancel the<br/>Selected Appointment]
+    ASK_CONFIRM -->|No| SHOW_CARDS
+    HIT_CANCEL -->|No| VIEW_HIST{View service<br/>history now?}
+    VIEW_HIST -->|No| SHOW_CARDS
+    VIEW_HIST -->|Yes| ASK_FILTER{Filter by<br/>category?}
+    ASK_FILTER -->|Show All| SHOW_ALL_HIST[Display Full<br/>Service History]
+    ASK_FILTER -->|By Category| SHOW_FILT_HIST[Display Filtered<br/>Service History]
+    SHOW_ALL_HIST --> SWIPE_CARDS[Scroll through<br/>History Cards]
+    SHOW_FILT_HIST --> SWIPE_CARDS
+    SWIPE_CARDS --> READ_CARD[Read Card Details<br/>Service Type / Cost /<br/>Stylist / Date / Duration]
+    READ_CARD --> CLICK_BOOK{Click + New<br/>to book?}
+    CLICK_BOOK -->|No| SWIPE_CARDS
+    CLICK_BOOK -->|Yes| OPEN_WIZARD[Open Booking<br/>Wizard Modal]
+    OPEN_WIZARD --> STEP_ONE[Step 1 of 4<br/>Pick a Service Type]
+    STEP_ONE --> SVC_PICKED{Service<br/>selected?}
+    SVC_PICKED -->|No| STEP_ONE
+    SVC_PICKED -->|Yes| STEP_TWO[Step 2 of 4<br/>Pick a Stylist]
+    STEP_TWO --> STYL_PICKED{Stylist<br/>selected?}
+    STYL_PICKED -->|No| STEP_TWO
+    STYL_PICKED -->|Yes| STEP_THREE[Step 3 of 4<br/>Pick Date and Time]
+    STEP_THREE --> SLOT_PICKED{Date and time<br/>selected?}
+    SLOT_PICKED -->|No| STEP_THREE
+    SLOT_PICKED -->|Yes| STEP_FOUR[Step 4 of 4<br/>Review Full Summary]
+    STEP_FOUR --> HIT_CONFIRM{Confirmed the<br/>booking?}
+    HIT_CONFIRM -->|No| HIT_BACK{Go back to<br/>previous step?}
+    HIT_BACK -->|Yes| STEP_ONE
+    HIT_BACK -->|No| STEP_FOUR
+    HIT_CONFIRM -->|Yes| SAVE_BOOKING[Save Appointment<br/>as Confirmed]
+    SAVE_BOOKING --> INSPECT_BOOK((Inspect<br/>Booking Result))
+    INSPECT_BOOK --> PLAY_ANIM[Play Success<br/>Animation on Screen]
+    SHOW_NONE --> PLAY_ANIM
+    DO_CANCEL_IT --> PLAY_ANIM
+    PLAY_ANIM --> CLOSE_WIZARD[Close Booking<br/>Modal Window]
+    CLOSE_WIZARD --> CUSTOMER_JUNCTION((Customer<br/>Junction))
+    PROCEED --> CUSTOMER_JUNCTION
+    CUSTOMER_JUNCTION --> ASK_CONTINUE{Continue using<br/>the application?}
+    ASK_CONTINUE -->|Yes| BROWSE_LP
+    ASK_CONTINUE -.->|No| P_END([End])
 ```
 
 ## Project Structure
