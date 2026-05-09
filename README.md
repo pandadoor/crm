@@ -45,172 +45,158 @@ Open http://localhost:5173 in your browser.
 | `npm run lint`    | Run ESLint             |
 | `tsc --noEmit`    | TypeScript check       |
 
-## System and Process Flowchart
+## System Flowchart
 
-The following unified flowchart captures the complete Salon CRM -- from the user entering the application through routing, authentication, booking, appointment lifecycle, service recording, and data persistence.
+The system flowchart depicts the physical and logical architecture of the Salon CRM -- the SPA shell, route resolution, page components, shared UI library, central state provider, and persistence stores.
 
 ```mermaid
 graph TD
-    ENTRY(("User Entry")) --> SPA["React 19 SPA<br/>Vite 8 | TypeScript | Tailwind v4"]
+    ENTRY(("Browser")) --> SPA["React 19 SPA<br/>Vite 8 + TypeScript + Tailwind v4"]
+    SPA --> ROUTER["React Router v7<br/>Client-side Route Matcher"]
+    ROUTER --> RESOLVE{"Route Match"}
+    RESOLVE -->|"/"| LANDING["LandingPage<br/>Hero stats / Services grid /<br/>Testimonials / Staff cards / CTA"]
+    RESOLVE -->|"/login"| LOGIN["LoginPage"]
+    RESOLVE -->|"/customer"| CUSTOMER["CustomerDashboard"]
+    RESOLVE -->|"/admin"| ADMIN["AdminDashboard"]
+    RESOLVE -->|"*"| CATCHALL["Redirect to /"]
 
-    SPA --> ROUTER["React Router v7<br/>Client-side Route Matching"]
-    ROUTER --> ROUTE{"Route Match?"}
+    CUSTOMER --> CTX["SalonContext<br/>Central State Provider"]
+    ADMIN --> CTX
+    CTX --> STORE[("localStorage<br/>key: salon_appointments<br/>key: salon_services")]
+    CTX --> SEED[("Seed Data (Immutable)<br/>Staff[5] / Customer[6]<br/>ServiceMenuItem[12]<br/>TimeSlots[18]")]
+    CTX --> UI["Shared UI Components"]
+    UI --> NAV["Navbar"]
+    UI --> FOOT["Footer"]
+    UI --> SCARD["ServiceCard"]
+    UI --> STATS["StatsCard"]
+    UI --> MODAL["BookingModal"]
+    NAV --> CTX
+    SCARD --> ROUTER
+    STATS --> CUSTOMER
+    STATS --> ADMIN
+    MODAL --> CTX
 
-    ROUTE -->|"/"| LANDING["LandingPage<br/>Hero stats | Services grid |<br/>Testimonials | Staff cards | CTA"]
-    ROUTE -->|"/login"| LOGINPAGE["LoginPage"]
+    LANDING --> SCARD
+    ADMIN --> COMP["Admin Sub-components<br/>RevenueChart / CustomerTable /<br/>AppointmentQueue / RecordServiceView"]
+    CUSTOMER --> COMP2["Customer Sub-components<br/>UpcomingAppointments /<br/>ServiceHistoryCarousel"]
+    LANDING --> LINK{"Book Now clicked?"}
+    LINK -->|Yes| LOGIN
+    LINK -->|No| LANDING
+```
 
-    ROUTE -->|"/customer"| CUSTDASH["CustomerDashboard"]
-    ROUTE -->|"/admin"| ADMINDASH["AdminDashboard"]
-    ROUTE -->|"*"| REDIRECT["Redirect to /"]
-    REDIRECT --> ROUTER
+## Process Flowchart
 
-    LANDING --> SVCGRID["Services grid with category filter"]
-    SVCGRID --> LGBOOK{"Clicks Book Now?"}
-    LGBOOK -->|Yes| LOGINPAGE
-    LGBOOK -->|No| LANDING
+The process flowchart follows the linear step-by-step user journey through the application -- from entry to authentication, booking, appointment management, and service recording -- with all decision branches explicitly shown.
 
-    LOGINPAGE --> ROLESELECT{"Select Role"}
-    ROLESELECT -->|Customer| CUSTFORM["Show customer login form"]
-    ROLESELECT -->|Admin| ADMINFORM["Show admin login form"]
-    CUSTFORM --> SUBMIT["Enter email + password<br/>Submit form"]
-    ADMINFORM --> SUBMIT
-    SUBMIT --> VALID{"Fields filled?"}
-    VALID -->|No| SUBMIT
-    VALID -->|Yes| AUTH["login(email)<br/>setCurrentUser(email)"]
-    AUTH --> ROLE{"email == admin@salon.com<br/>or role == admin?"}
-    ROLE -->|Yes| NAVADMIN["Navigate to /admin"]
-    ROLE -->|No| NAVCUST["Navigate to /customer"]
+```mermaid
+graph TD
+    START(("User Arrives")) --> PAGE{"Which page?"}
+    PAGE -->|Landing| LBROWSE["Browse services & staff"]
+    LBROWSE --> LACT{"Clicks Book Now?"}
+    LACT -->|Yes| LPAGE["Navigate to /login"]
+    LACT -->|No| LBROWSE
+    PAGE -->|Login| LSELECT{"Select role"}
+    LSELECT -->|Customer| CFORM["Show customer form"]
+    LSELECT -->|Admin| AFORM["Show admin form"]
+    CFORM --> ENTER["Enter email + password"]
+    AFORM --> ENTER
+    ENTER --> SUBMIT["Click Login button"]
+    SUBMIT --> FVALID{"Email empty?"}
+    FVALID -->|Yes| ENTER
+    FVALID -->|No| LOGIN_OP["login(email)"]
+    LOGIN_OP --> ROLE{"email == admin@salon.com<br/>or role == admin?"}
+    ROLE -->|Yes| GOTOADMIN["Navigate to /admin"]
+    ROLE -->|No| GOTOCUST["Navigate to /customer"]
+    GOTOADMIN --> ADASH(("Admin Dashboard"))
+    GOTOCUST --> CDASH(("Customer Dashboard"))
 
-    NAVCUST --> CUSTDASH
-    NAVADMIN --> ADMINDASH
-
-    CUSTDASH --> CTX["SalonContext<br/>Central State Provider"]
-    ADMINDASH --> CTX
-
-    CTX --> STATS["StatsCard x4<br/>Services | Spent | Upcoming | Loyalty"]
-    CTX --> PROFILE["Profile Sidebar<br/>Avatar | Contact | Member since"]
-    CTX --> UPCOMING["Upcoming Appointments Section"]
-
-    UPCOMING --> LISTUP{"Appointments exist?"}
-    LISTUP -->|No| EMPTYUP["Empty state:<br/>No upcoming + Book Now CTA"]
-    LISTUP -->|Yes| APTCARD["Appointment cards x3<br/>Service | Date | Time | Cancel btn"]
-    APTCARD --> CANCEL{"Cancel clicked?"}
-    CANCEL -->|Yes| CONFIRMCANCEL{"Confirm dialog?"}
-    CONFIRMCANCEL -->|Yes| DOCANCEL["cancelAppointment(id)<br/>status = cancelled"]
-    CONFIRMCANCEL -->|No| APTCARD
-    DOCANCEL --> PERSIST
-
-    CTX --> HISTORY["Service History Section"]
-    HISTORY --> FILTER{"Category filter?"}
-    FILTER -->|All| ALLHIST["Show all customer services"]
+    CDASH --> CSTATS["View stats cards<br/>Services / Spent / Upcoming / Loyalty"]
+    CSTATS --> UAPTS{"Appointments exist?"}
+    UAPTS -->|No| SHOWEMPTY["Show 'No upcoming' + CTA"]
+    UAPTS -->|Yes| SHOWCARDS["Show appointment cards<br/>Service / Date / Time / Cancel btn"]
+    SHOWCARDS --> CANCEL{"Cancel clicked?"}
+    CANCEL -->|Yes| DIALOG{"Confirm cancellation?"}
+    DIALOG -->|Yes| DOCANCEL["cancelAppointment(id)<br/>status = cancelled"]
+    DIALOG -->|No| SHOWCARDS
+    CANCEL -->|No| NEXT{"View history?"}
+    NEXT -->|Yes| FILTER{"Filter by category?"}
+    FILTER -->|All| ALLHIST["Show all services"]
     FILTER -->|Specific| FILTHIST["Show filtered services"]
-    ALLHIST --> STACKED["Stacked card carousel<br/>Drag/swipe to navigate<br/>Up to 2 cards visible behind"]
-    FILTHIST --> STACKED
-    STACKED --> DRAG{"User drags?"}
+    ALLHIST --> DRAG{"User drags card?"}
+    FILTHIST --> DRAG
     DRAG -->|Yes| OFFSET{"Offset > 50px?"}
-    OFFSET -->|Yes| NEXTCARD["Navigate to next card"]
-    OFFSET -->|No| SNAP["Snap back to current"]
-    NEXTCARD --> STACKED
-    SNAP --> STACKED
-    DRAG -->|No| IDLE["Display current card<br/>Service type | Cost | Stylist |<br/>Category | Date | Duration"]
+    OFFSET -->|Yes| NEXTCARD["Show next card"]
+    OFFSET -->|No| SNAPBACK["Snap to current"]
+    NEXTCARD --> DRAG
+    SNAPBACK --> DRAG
+    DRAG -->|No| DISPLAY["Show card details<br/>Type / Cost / Stylist / Date / Duration"]
+    DISPLAY --> BOOKACT{"Click + New?"}
+    BOOKACT -->|Yes| BOOKING["Open Booking Modal"]
+    BOOKING --> S1["Step 1: Choose Service<br/>Category tabs + service list"]
+    S1 --> S1CHK{"Service selected?"}
+    S1CHK -->|No| S1
+    S1CHK -->|Yes| S2["Step 2: Choose Stylist<br/>Filtered by specialty"]
+    S2 --> S2CHK{"Stylist selected?"}
+    S2CHK -->|No| S2
+    S2CHK -->|Yes| S3["Step 3: Pick Date & Time<br/>Calendar + time slot grid"]
+    S3 --> S3CHK{"Date & time selected?"}
+    S3CHK -->|No| S3
+    S3CHK -->|Yes| S4["Step 4: Review & Confirm<br/>Service / Stylist / Date / Cost"]
+    S4 --> CONFIRM{"Confirm?"}
+    CONFIRM -->|No| BACK{"Back?"}
+    BACK -->|Yes| S1
+    BACK -->|No| S4
+    CONFIRM -->|Yes| BOOKOP["bookAppointment()<br/>status = confirmed"]
+    BOOKOP --> WRITE[("Write to localStorage<br/>salon_appointments")]
+    WRITE --> ANIM["Show success animation"]
+    ANIM --> CLOSE["Close modal after 2s"]
+    CLOSE --> CDASH
 
-    CTX --> BOOKTRIGGER{"Clicks + New or Book Now?"}
-    BOOKTRIGGER -->|Yes| BOOKINGMODAL["Open BookingModal"]
-
-    BOOKINGMODAL --> STEP1["Step 1: Choose Service<br/>Category filter tabs<br/>Service list with price + duration"]
-    STEP1 --> SVCCHK{"Service selected?"}
-    SVCCHK -->|No| STEP1
-    SVCCHK -->|Yes| STEP2["Step 2: Choose Stylist<br/>Filtered by specialty match<br/>Rating | Role | Availability"]
-    STEP2 --> STYLCHK{"Stylist selected?"}
-    STYLCHK -->|No| STEP2
-    STYLCHK -->|Yes| STEP3["Step 3: Pick Date & Time<br/>Calendar navigation (month/year)<br/>Past dates disabled | Today highlight<br/>Time slots grid (18 slots)"]
-    STEP3 --> DTCHK{"Date + Time selected?"}
-    DTCHK -->|No| STEP3
-    DTCHK -->|Yes| STEP4["Step 4: Review & Confirm<br/>Service | Stylist | Date | Time | Cost"]
-    STEP4 --> CONFIRM{"Confirm clicked?"}
-    CONFIRM -->|No| BACK{"Back clicked?"}
-    BACK -->|Yes| PREVSTEP["Go to previous step"]
-    PREVSTEP --> STEP1
-    PREVSTEP --> STEP2
-    PREVSTEP --> STEP3
-    BACK -->|No| STEP4
-    CONFIRM -->|Yes| BOOK["bookAppointment()<br/>id = Date.now()<br/>status = confirmed<br/>createdAt = ISO timestamp"]
-    BOOK --> PERSIST[("localStorage<br/>salon_appointments stored<br/>salon_services stored")]
-    PERSIST --> SUCCESS["Show success animation<br/>Checkmark + booking details"]
-    SUCCESS --> TIMEOUT["2-second timeout"]
-    TIMEOUT --> CLOSEMODAL["Close modal + reset form"]
-    CLOSEMODAL --> CUSTDASH
-
-    CTX --> APPOINTMENTDB((("Appointments State<br/>Array<Appointment>")))
-
-    APPOINTMENTDB --> LIFECYCLE{"Status transitions"}
-    LIFECYCLE -->|confirmed| CONFIRMED["Confirmed Appointment<br/>customerId | service | stylist |<br/>date | time | cost | duration"]
-    CONFIRMED --> ADMINCOMPLETE{"Admin clicks Complete?"}
-    ADMINCOMPLETE -->|Yes| COMPLETED["Completed Appointment<br/>status = completed"]
-    ADMINCOMPLETE -->|No| CUSTCANCEL{"Customer clicks Cancel?"}
-    CUSTCANCEL -->|Yes| CANCELLED["Cancelled Appointment<br/>status = cancelled"]
-    CUSTCANCEL -->|No| CONFIRMED
-    COMPLETED --> RECORDSVC["recordService() triggered"]
-    CANCELLED --> ARCHIVE[("Archived<br/>Status preserved in state")]
-
-    RECORDSVC --> ADDRECORD["Add to services[]<br/>id = Date.now()<br/>gradient = category color"]
-    ADDRECORD --> PERSIST
-
-    ADMINDASH --> ADMINCTX["SalonContext"]
-    ADMINCTX --> ADMINTABS{"Admin Tab Selection"}
-    ADMINTABS -->|Overview| OVERVIEW["Overview Dashboard"]
-    ADMINTABS -->|Customers| CUSTOMERS["Customer Database"]
-    ADMINTABS -->|Appointments| APPTAB["Appointment Queue"]
-    ADMINTABS -->|Services| RECORDSVCTAB["Record New Service Form"]
-    ADMINTABS -->|Staff| STAFFTAB["Staff Directory"]
-
-    OVERVIEW --> REVENUE["StatsCard x4<br/>Active Customers | Total Revenue |<br/>Pending Appointments | Services"]
-    OVERVIEW --> CHART["Monthly Revenue Chart<br/>12-month bar chart<br/>Current month highlighted (purple)"]
-    OVERVIEW --> ACTIVITY["Recent Activity Feed<br/>Last 5 appointments<br/>Status icons per row"]
-    OVERVIEW --> QUICKACTIONS["Quick Actions buttons<br/>Record Service | Customers | Appointments"]
-
-    CUSTOMERS --> SEARCHBAR{"Search query?"}
-    SEARCHBAR -->|Yes| FILTERCUST["Filter customers by name/email"]
-    SEARCHBAR -->|No| ALLCUST["Show all 6 customers"]
-    ALLCUST --> CUSTOMERTABLE["Table: Name | Status | Visits |<br/>LTV | Most Frequent | View btn"]
-    FILTERCUST --> CUSTOMERTABLE
-    CUSTOMERTABLE --> STATUSBADGE{"Status badge color"}
-    STATUSBADGE -->|Active| GREEN["Green badge"]
-    STATUSBADGE -->|At Risk| YELLOW["Yellow badge"]
-    STATUSBADGE -->|Inactive| RED["Red badge"]
-
-    APPTAB --> APPTLIST["List all non-cancelled appointments"]
-    APPTLIST --> APTROW["Appointment row<br/>Service | Customer | Stylist |<br/>Date | Time | Duration | Status"]
-    APTROW --> APTACTION{"Status == confirmed?"}
-    APTACTION -->|Yes| COMPLETEBTN["Complete button"]
-    APTACTION -->|No| READONLY["Read-only completed status"]
-    COMPLETEBTN --> DOCOMPLETE["completeAppointment(id)"]
-    DOCOMPLETE --> RECORDSVC
-    DOCOMPLETE --> PERSIST
-
-    RECORDSVCTAB --> SVCFORM["Service Recording Form"]
-    SVCFORM --> SVCFIELDS["Fields: email | service type |<br/>stylist | category | cost | duration"]
-    SVCFIELDS --> SVCSELECT{"Category dropdown"}
-    SVCSELECT --> HAIR["Hair"]
-    SVCSELECT --> COLOR["Color"]
-    SVCSELECT --> NAILS["Nails"]
-    SVCSELECT --> TREATMENT["Treatment"]
-    SVCSELECT --> SVCSBMIT{"Submit?"}
-    SVCSBMIT -->|Yes| SVCFORMVALID{"All fields filled?"}
-    SVCFORMVALID -->|No| SVCFIELDS
-    SVCFORMVALID -->|Yes| DOSVC["recordService(formData)<br/>cost parsed to float"]
-    DOSVC --> GENGRAD["Gradient auto-assigned:<br/>Hair = purple<br/>Color = pink<br/>Treatment = blue<br/>Nails = green"]
-    GENGRAD --> PREPENDSVC["Prepend to services[]"]
-    PREPENDSVC --> PERSIST
-    PREPENDSVC --> TOASTGREEN["Green success toast (3 seconds)"]
-    TOASTGREEN --> SVCRESET["Reset form fields"]
-    SVCRESET --> SVCFIELDS
-    SVCSBMIT -->|No| SVCFIELDS
-
-    STAFFTAB --> STAFFGRID["Staff card grid<br/>Image | Name | Role | Bio |<br/>Specialties tags | Rating | Jobs"]
-    STAFFGRID --> STAFFSTATS["Per staff: completed jobs count<br/>filtered from services[]"]
-
-    CTX --> SEEDDATA((("Seed Data (Static)<br/>StaffMember[] x5<br/>Customer[] x6<br/>ServiceMenuItem[] x12<br/>TimeSlots[] x18<br/>Categories[] x4<br/>Gradients map")))
+    ADASH --> TABS{"Select admin tab"}
+    TABS -->|Overview| OV["Overview dashboard"]
+    TABS -->|Customers| CUSTAB["Customer database"]
+    TABS -->|Appointments| APPTAB["Appointment queue"]
+    TABS -->|Services| SVCTAB["Record service form"]
+    TABS -->|Staff| STFTAB["Staff directory"]
+    OV --> OVSTATS["Stats: Active / Revenue / Pending / Services"]
+    OV --> OVCHART["Monthly revenue bar chart"]
+    OV --> OVFEED["Recent activity feed (5 items)"]
+    OV --> OVACT["Quick action buttons"]
+    CUSTAB --> CSEARCH{"Search query?"}
+    CSEARCH -->|Yes| CFILTER["Filter customers"]
+    CSEARCH -->|No| CSHOW["Show all 6 customers"]
+    CFILTER --> CTABLE["Table: Name / Status / Visits / LTV"]
+    CSHOW --> CTABLE
+    CTABLE --> BADGE{"Status?"}
+    BADGE -->|Active| BGREEN["Green badge"]
+    BADGE -->|At Risk| BYELLOW["Yellow badge"]
+    BADGE -->|Inactive| BRED["Red badge"]
+    APPTAB --> ALIST["List confirmed appointments"]
+    ALIST --> AROW["Appointment row<br/>Service / Customer / Stylist / Date"]
+    AROW --> ACOMP{"Complete?"}
+    ACOMP -->|Yes| DOCOMP["completeAppointment(id)"]
+    ACOMP -->|No| AROW
+    DOCOMP --> ACOMPLETE["Status = completed"]
+    ACOMPLETE --> ARECORD["recordService() triggered"]
+    ARECORD --> WRITE2[("Write to localStorage<br/>salon_services")]
+    SVCTAB --> SFORM["Fill form: email / type /<br/>stylist / category / cost / duration"]
+    SFORM --> SCATEGORY{"Category?"}
+    SCATEGORY --> HAIR["Hair"]
+    SCATEGORY --> COLOR["Color"]
+    SCATEGORY --> NAILS["Nails"]
+    SCATEGORY --> TREAT["Treatment"]
+    SCATEGORY --> SSBMIT{"Submit?"}
+    SSBMIT -->|No| SFORM
+    SSBMIT -->|Yes| SVALID{"All fields valid?"}
+    SVALID -->|No| SFORM
+    SVALID -->|Yes| RECORDOP["recordService(formData)"]
+    RECORDOP --> GRADIENT["Assign gradient by category"]
+    GRADIENT --> PREPEND["Prepend to services[]"]
+    PREPEND --> WRITE2
+    PREPEND --> TOAST["Show green toast"]
+    TOAST --> SRESET["Reset form"]
+    SRESET --> SFORM
+    STFTAB --> SGRID["Staff card grid<br/>Image / Name / Role / Bio /<br/>Specialties / Rating / Job count"]
 ```
 
 ## Project Structure
