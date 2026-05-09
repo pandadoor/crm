@@ -1,0 +1,466 @@
+import { useState, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useSalon } from '../context/SalonContext';
+import StatsCard from '../components/StatsCard';
+import { Users, Scissors, DollarSign, TrendingUp, Calendar, Bell, Plus, History, LogOut, Search, Star, Clock, User, Check, X, Sparkles } from 'lucide-react';
+import type { ServiceHistoryItem } from '../types';
+
+interface RecordServiceViewProps {
+  categories: string[];
+  recordService: (service: Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string }) => void;
+  setView: (view: string) => void;
+}
+
+function RecordServiceView({ categories, recordService, setView }: RecordServiceViewProps) {
+  const [formData, setFormData] = useState({
+    customerId: 'customer@example.com',
+    serviceType: '',
+    stylist: '',
+    cost: '',
+    duration: '',
+    category: 'Hair',
+    date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  });
+
+  const [customerEmail, setCustomerEmail] = useState('customer@example.com');
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    recordService({ ...formData, cost: parseFloat(formData.cost), customerId: customerEmail } as unknown as Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string });
+    setShowSuccess(true);
+    setFormData({
+      customerId: customerEmail,
+      serviceType: '', stylist: '', cost: '', duration: '', category: 'Hair',
+      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    });
+    setTimeout(() => setShowSuccess(false), 3000);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="glass" style={{ padding: 32, maxWidth: 600, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          <h2 style={{ fontSize: 18 }}>Record New Service</h2>
+          <button onClick={() => setView('overview')}
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13 }}>
+            Back to Overview
+          </button>
+        </div>
+
+        {showSuccess && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              padding: 14, borderRadius: 10, marginBottom: 20,
+              background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+              display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#22c55e'
+            }}>
+            <Check size={18} /> Service recorded and customer notified!
+          </motion.div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Customer Email</label>
+            <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)}
+              placeholder="customer@example.com" required style={{ fontSize: 13 }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Service Type</label>
+            <input type="text" placeholder="e.g. Balayage Refinement" required
+              value={formData.serviceType} onChange={e => setFormData({ ...formData, serviceType: e.target.value })}
+              style={{ fontSize: 13 }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Stylist</label>
+              <input type="text" placeholder="Emma Rodriguez" required
+                value={formData.stylist} onChange={e => setFormData({ ...formData, stylist: e.target.value })}
+                style={{ fontSize: 13 }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Category</label>
+              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}
+                className="glass" style={{ width: '100%', padding: '12px', background: 'rgba(5,5,5,0.5)', color: 'white', borderRadius: 8, fontSize: 13 }}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Cost (USD)</label>
+              <input type="number" placeholder="85.00" required
+                value={formData.cost} onChange={e => setFormData({ ...formData, cost: e.target.value })}
+                style={{ fontSize: 13 }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Duration</label>
+              <input type="text" placeholder="45 min" required
+                value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })}
+                style={{ fontSize: 13 }} />
+            </div>
+          </div>
+          <button type="submit" className="premium-btn" style={{ marginTop: 12, padding: 14, fontSize: 14 }}>
+            Log Service & Notify Customer
+          </button>
+        </form>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const { services, appointments, staff, customers, categories, recordService, completeAppointment } = useSalon();
+  const [view, setView] = useState('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const totalRevenue = services.reduce((s, sv) => s + sv.cost, 0);
+  const activeCustomers = customers.filter(c => c.status === 'Active').length;
+  const pendingAppointments = appointments.filter(a => a.status === 'confirmed').length;
+  const monthlyRevenue = services.filter(s => {
+    const d = new Date(s.date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, sv) => s + sv.cost, 0);
+
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="layout-container" style={{ padding: '24px 40px 60px', background: '#050505', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <div>
+            <h1 className="premium-gradient-text" style={{ fontSize: 30, fontWeight: 'bold' }}>Admin Control Center</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Centralized intelligence for your salon operations.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Bell size={18} />
+              <span style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
+            </button>
+            <button onClick={() => navigate('/login')}
+              style={{
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: 10,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13
+              }}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
+          {([
+            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'customers', label: 'Customers', icon: Users },
+            { id: 'appointments', label: 'Appointments', icon: Calendar },
+            { id: 'services', label: 'Services', icon: Scissors },
+            { id: 'staff', label: 'Staff', icon: Star },
+          ] as const).map(tab => (
+            <button key={tab.id} onClick={() => setView(tab.id)}
+              style={{
+                padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                background: view === tab.id ? 'linear-gradient(135deg, #8b5cf6, #d946ef)' : 'rgba(255,255,255,0.04)',
+                color: 'white', transition: 'all 0.2s'
+              }}>
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Overview */}
+        {view === 'overview' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
+              <StatsCard title="Active Customers" value={activeCustomers} icon={Users} color="#8b5cf6" trend={8} />
+              <StatsCard title="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} color="#22c55e" trend={12} />
+              <StatsCard title="Pending Appointments" value={pendingAppointments} icon={Calendar} color="#ec4899" />
+              <StatsCard title="Services Performed" value={services.length} icon={Scissors} color="#f59e0b" subtitle="This month" />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+              {/* Revenue Chart */}
+              <div className="glass" style={{ padding: 28 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Monthly Revenue</h3>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 160 }}>
+                  {[4200, 5800, 6300, 5100, 7200, 8900, 9400, 8200, 10500, 11800, 13200, monthlyRevenue].map((val, i) => {
+                    const max = Math.max(4200, 5800, 6300, 5100, 7200, 8900, 9400, 8200, 10500, 11800, 13200, monthlyRevenue);
+                    const height = (val / max) * 140;
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{
+                          width: '100%', height, borderRadius: '6px 6px 0 0',
+                          background: i === 11 ? 'linear-gradient(180deg, #8b5cf6, #d946ef)' : 'rgba(139,92,246,0.2)',
+                          transition: 'height 0.5s', minHeight: 4
+                        }} />
+                        <span style={{ fontSize: 9, color: 'var(--text-secondary)' }}>{months[i]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="glass" style={{ padding: 28 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Recent Activity</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {appointments.slice(0, 5).map(apt => (
+                    <div key={apt.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8,
+                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : apt.status === 'cancelled' ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {apt.status === 'confirmed' ? <Calendar size={14} color="#22c55e" /> :
+                         apt.status === 'cancelled' ? <X size={14} color="#ef4444" /> : <Check size={14} color="#8b5cf6" />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{apt.service}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{apt.date} &middot; {apt.time}</div>
+                      </div>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
+                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                        color: apt.status === 'confirmed' ? '#22c55e' : '#ef4444'
+                      }}>
+                        {apt.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="glass" style={{ padding: 28 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Quick Actions</h3>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <button onClick={() => setView('services')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Plus size={16} color="#8b5cf6" /> Record New Service
+                </button>
+                <button onClick={() => setView('customers')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Users size={16} color="#8b5cf6" /> Manage Customers
+                </button>
+                <button onClick={() => setView('appointments')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Calendar size={16} color="#8b5cf6" /> View Appointments
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Customers */}
+        {view === 'customers' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="glass" style={{ padding: 28 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18 }}>Customer Database</h2>
+                <div style={{ position: 'relative', width: 280 }}>
+                  <Search size={16} style={{ position: 'absolute', left: 14, top: 12, color: 'var(--text-secondary)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search customers..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ paddingLeft: 40, padding: '10px 14px 10px 40', fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Customer</th>
+                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Status</th>
+                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Visits</th>
+                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Lifetime Value</th>
+                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Most Frequent</th>
+                      <th style={{ padding: '12px' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.map(c => {
+                      const customerServiceCount = services.filter(s => s.customerId === c.email).length;
+                      const topCategory = services.filter(s => s.customerId === c.email).reduce<Record<string, number>>((acc, s) => {
+                        acc[s.category] = (acc[s.category] || 0) + 1;
+                        return acc;
+                      }, {});
+                      const mostFreq = Object.entries(topCategory).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+                      return (
+                        <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '14px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{
+                                width: 36, height: 36, borderRadius: 10,
+                                background: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 14, fontWeight: 'bold', color: '#8b5cf6'
+                              }}>
+                                {c.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 500 }}>{c.name}</div>
+                                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 12px' }}>
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                              background: c.status === 'Active' ? 'rgba(34,197,94,0.1)' :
+                                          c.status === 'At Risk' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                              color: c.status === 'Active' ? '#22c55e' :
+                                     c.status === 'At Risk' ? '#f59e0b' : '#ef4444'
+                            }}>
+                              {c.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 12px', fontSize: 14 }}>{customerServiceCount}</td>
+                          <td style={{ padding: '14px 12px', fontSize: 14, color: '#22c55e', fontWeight: 600 }}>${c.lifetimeValue}</td>
+                          <td style={{ padding: '14px 12px', fontSize: 13 }}>{mostFreq}</td>
+                          <td style={{ padding: '14px 12px' }}>
+                            <button style={{
+                              background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 13, fontWeight: 500
+                            }}>
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Appointments */}
+        {view === 'appointments' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="glass" style={{ padding: 28 }}>
+              <h2 style={{ fontSize: 18, marginBottom: 20 }}>Appointment Queue</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {appointments.filter(a => a.status !== 'cancelled').map(apt => (
+                  <div key={apt.id} style={{
+                    padding: 20, borderRadius: 12,
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  }}>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(139,92,246,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {apt.status === 'confirmed' ? <Calendar size={20} color="#22c55e" /> : <Check size={20} color="#8b5cf6" />}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{apt.service}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+                          {apt.customerId} &middot; {apt.stylist}
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
+                          {apt.date} at {apt.time} &middot; {apt.duration}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(139,92,246,0.1)',
+                        color: apt.status === 'confirmed' ? '#22c55e' : '#8b5cf6'
+                      }}>
+                        {apt.status}
+                      </span>
+                      {apt.status === 'confirmed' && (
+                        <button onClick={() => completeAppointment(apt.id)}
+                          className="premium-btn"
+                          style={{ padding: '6px 14px', fontSize: 11 }}>
+                          Complete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {appointments.filter(a => a.status !== 'cancelled').length === 0 && (
+                  <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: 20 }}>No appointments yet.</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Services / Record */}
+        {view === 'services' && <RecordServiceView categories={categories} recordService={recordService} setView={setView} />}
+
+        {/* Staff */}
+        {view === 'staff' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="glass" style={{ padding: 28 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18 }}>Staff Directory</h2>
+                <button className="premium-btn" style={{ padding: '10px 20px', fontSize: 13 }}>
+                  <Plus size={16} style={{ marginRight: 6 }} /> Add Staff
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                {staff.map(s => {
+                  const completedJobs = services.filter(sv => sv.stylist === s.name).length;
+                  return (
+                    <div key={s.id} className="glass" style={{ padding: 20, background: 'rgba(255,255,255,0.02)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                        <div style={{
+                          width: 48, height: 48, borderRadius: 12,
+                          background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(217,70,239,0.15))',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 18, fontWeight: 'bold', color: '#8b5cf6'
+                        }}>
+                          {s.image}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 15 }}>{s.name}</div>
+                          <div style={{ color: '#8b5cf6', fontSize: 13 }}>{s.role}</div>
+                        </div>
+                      </div>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 12 }}>{s.bio}</p>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {s.specialties.map(sp => (
+                          <span key={sp} style={{
+                            padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 600,
+                            background: 'rgba(139,92,246,0.1)', color: '#8b5cf6'
+                          }}>
+                            {sp}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' }}>
+                        <span>★ {s.rating}</span>
+                        <span>{completedJobs} services completed</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}

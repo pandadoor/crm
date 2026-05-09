@@ -1,0 +1,9 @@
+{
+  "id": "swarm-1778335110727-txydy4",
+  "topology": "hierarchical-mesh",
+  "maxAgents": 15,
+  "strategy": "development",
+  "v3Mode": true,
+  "initializedAt": "2026-05-09T13:58:30.727Z",
+  "status": "ready"
+}

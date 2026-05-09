@@ -1,0 +1,83 @@
+{
+  "agents": {
+    "agent-1778335154539-rwxtvl": {
+      "agentId": "agent-1778335154539-rwxtvl",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "Implement a high-fidelity Login.jsx in src/pages/ using React and the styles in src/index.css. Use glassmorphism and mock authentication (admin@salon.com / customer@example.com)."
+      },
+      "createdAt": "2026-05-09T13:59:14.541Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1778335157147-vp7s9x": {
+      "agentId": "agent-1778335157147-vp7s9x",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "Implement the Admin CMS in src/pages/AdminDashboard.jsx and Communication.jsx. Include Bulk Communication UI and Automated Retention settings."
+      },
+      "createdAt": "2026-05-09T13:59:17.148Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1778335878490-qz4t6l": {
+      "agentId": "agent-1778335878490-qz4t6l",
+      "agentType": "architect",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "Design a React Context (SalonContext.jsx) to manage service history, categories, and customers. Define a recordService(customerId, serviceDetails) function. Use initial mock data."
+      },
+      "createdAt": "2026-05-09T14:11:18.490Z",
+      "model": "opus",
+      "modelRoutedBy": "default"
+    },
+    "agent-1778335880307-h6wgjh": {
+      "agentId": "agent-1778335880307-h6wgjh",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "Implement src/context/SalonContext.jsx based on the architect's design. Ensure it provides services, categories, and customers to the entire app."
+      },
+      "createdAt": "2026-05-09T14:11:20.307Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1778335882018-zjeodi": {
+      "agentId": "agent-1778335882018-zjeodi",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "Refactor src/pages/CustomerDashboard.jsx to use the 21st.dev variant 4 (Stacked Carousel) provided in the chat. Connect it to SalonContext."
+      },
+      "createdAt": "2026-05-09T14:11:22.018Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1778339329786-tmhq8w": {
+      "agentId": "agent-1778339329786-tmhq8w",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "domain": "conversion"
+      },
+      "createdAt": "2026-05-09T15:08:49.805Z",
+      "model": "haiku",
+      "modelRoutedBy": "router"
+    }
+  },
+  "version": "3.0.0"
+}
