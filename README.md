@@ -62,8 +62,8 @@ graph TD
 
     CUSTOMER --> CTX["SalonContext<br/>Central State Provider"]
     ADMIN --> CTX
-    CTX --> STORE[("localStorage<br/>key: salon_appointments<br/>key: salon_services")]
-    CTX --> SEED[("Seed Data (Immutable)<br/>Staff[5] / Customer[6]<br/>ServiceMenuItem[12]<br/>TimeSlots[18]")]
+    CTX --> STORE[(localStorage<br/>salon_appointments<br/>salon_services)]
+    CTX --> SEED[(Seed Data<br/>Staff / Customer /<br/>Menu / Slots)]
     CTX --> UI["Shared UI Components"]
     UI --> NAV["Navbar"]
     UI --> FOOT["Footer"]
@@ -147,7 +147,7 @@ graph TD
     BACK -->|Yes| S1
     BACK -->|No| S4
     CONFIRM -->|Yes| BOOKOP["bookAppointment()<br/>status = confirmed"]
-    BOOKOP --> WRITE[("Write to localStorage<br/>salon_appointments")]
+    BOOKOP --> WRITE[(Write to localStorage<br/>salon_appointments)]
     WRITE --> ANIM["Show success animation"]
     ANIM --> CLOSE["Close modal after 2s"]
     CLOSE --> CDASH
@@ -178,7 +178,7 @@ graph TD
     ACOMP -->|No| AROW
     DOCOMP --> ACOMPLETE["Status = completed"]
     ACOMPLETE --> ARECORD["recordService() triggered"]
-    ARECORD --> WRITE2[("Write to localStorage<br/>salon_services")]
+    ARECORD --> WRITE2[(Write to localStorage<br/>salon_services)]
     SVCTAB --> SFORM["Fill form: email / type /<br/>stylist / category / cost / duration"]
     SFORM --> SCATEGORY{"Category?"}
     SCATEGORY --> HAIR["Hair"]
