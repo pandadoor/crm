@@ -86,114 +86,28 @@ graph TD
 
 ## Process Flowchart
 
-The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through authentication, appointment booking, and service recording, with all decision branches explicitly labeled.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- following a straight linear procedure from arrival through authentication and role-based operations, with only essential decision branches.
 
 ```mermaid
 graph TD
-    P_START([Start]) --> LOAD_APP{{Load Application<br/>Initialize Data}}
-    LOAD_APP --> BROWSE_LP[Browse Landing Page<br/>View Services and Staff]
-    BROWSE_LP --> BOOK_NOW{Book Now<br/>button clicked?}
-    BOOK_NOW -->|Yes| GO_LOGIN[Open Login Page]
-    BOOK_NOW -->|No| BROWSE_LP
-    GO_LOGIN --> PICK_ROLE[Select User Role<br/>Customer or Admin]
-    PICK_ROLE --> TYPE_EMAIL[Type Email<br/>Address into Form]
-    TYPE_EMAIL --> INSPECT_LOGIN((Inspect<br/>Login Input))
-    INSPECT_LOGIN --> EMAIL_OK{Email address<br/>provided?}
-    EMAIL_OK -->|No| TYPE_EMAIL
-    EMAIL_OK -->|Yes| AUTH_USER[Log User Into<br/>the System]
-    AUTH_USER --> CHECK_ROLE{Is this the<br/>salon admin?}
-    CHECK_ROLE -->|Yes| VIEW_ADMIN[Display Admin<br/>Dashboard Screen]
-    CHECK_ROLE -->|No| VIEW_CUST[Display Customer<br/>Dashboard Screen]
-    VIEW_ADMIN --> CHOOSE_TAB[Select Admin<br/>Function Tab]
-    CHOOSE_TAB --> TAB_OVERVIEW{Tab is<br/>Overview?}
-    TAB_OVERVIEW -->|Yes| SHOW_OVERVIEW[Display Revenue<br/>Metrics and Chart]
-    TAB_OVERVIEW -->|No| TAB_CUSTOMERS{Tab is<br/>Customers?}
-    TAB_CUSTOMERS -->|Yes| OPEN_CUSTOMERS[Open Customer<br/>Directory View]
-    TAB_CUSTOMERS -->|No| TAB_APPOINTMENTS{Tab is<br/>Appointments?}
-    TAB_APPOINTMENTS -->|Yes| OPEN_QUEUE[Open Appointment<br/>Queue View]
-    TAB_APPOINTMENTS -->|No| TAB_SERVICES{Tab is<br/>Services?}
-    TAB_SERVICES -->|Yes| OPEN_RECORD[Open Service<br/>Recording Form]
-    TAB_SERVICES -->|No| TAB_STAFF{Tab is<br/>Staff?}
-    TAB_STAFF -->|Yes| OPEN_STAFF[Open Staff<br/>Directory View]
-    OPEN_CUSTOMERS --> TYPE_SEARCH[Type Customer<br/>Name or Email]
-    TYPE_SEARCH --> FOUND_ANY{Matches<br/>found?}
-    FOUND_ANY -->|No| TYPE_SEARCH
-    FOUND_ANY -->|Yes| SHOW_TABLE[Display Matching<br/>Customer Rows]
-    OPEN_QUEUE --> VIEW_APT[Review Appointment<br/>Details in Queue]
-    VIEW_APT --> MARK_DONE{Mark this<br/>appointment done?}
-    MARK_DONE -->|Yes| COMPLETE_IT[Set Appointment<br/>Status to Completed]
-    MARK_DONE -.->|No| VIEW_APT
-    OPEN_RECORD --> FILL_FORM[Fill Service Form<br/>Email / Type / Stylist /<br/>Category / Cost / Duration]
-    FILL_FORM --> PICK_CAT{Choose service<br/>category}
-    PICK_CAT --> CAT_HAIR[Hair]
-    PICK_CAT --> CAT_COLOR[Color]
-    PICK_CAT --> CAT_NAILS[Nails]
-    PICK_CAT --> CAT_TREAT[Treatment]
-    CAT_HAIR --> SEND_FORM[Submit the<br/>Service Form]
-    CAT_COLOR --> SEND_FORM
-    CAT_NAILS --> SEND_FORM
-    CAT_TREAT --> SEND_FORM
-    SEND_FORM --> INSPECT_FORM((Inspect<br/>Form Fields))
-    INSPECT_FORM --> ALL_FILLED{All fields<br/>completed?}
-    ALL_FILLED -->|No| FILL_FORM
-    ALL_FILLED -->|Yes| SAVE_SVC_REC[Save Service Record<br/>and Assign Category Color]
-    SAVE_SVC_REC --> SHOW_TOAST[Display Success<br/>Notification Message]
-    SHOW_TOAST --> CLEAR_FORM[Clear the<br/>Form Fields]
-    CLEAR_FORM --> RECORD_MORE{Record another<br/>service?}
-    RECORD_MORE -->|Yes| FILL_FORM
-    RECORD_MORE -.->|No| ADMIN_JUNCTION
-    SHOW_OVERVIEW --> ADMIN_JUNCTION((Admin<br/>Junction))
-    SHOW_TABLE --> ADMIN_JUNCTION
-    OPEN_STAFF --> ADMIN_JUNCTION
-    COMPLETE_IT --> ADMIN_JUNCTION
-    ADMIN_JUNCTION --> DO_MORE_ADM{Perform another<br/>admin action?}
-    DO_MORE_ADM -->|Yes| CHOOSE_TAB
-    DO_MORE_ADM -->|No| PROCEED
-
-    VIEW_CUST --> SHOW_STATS[Display Four<br/>Stats Cards]
-    SHOW_STATS --> HAS_APT{Upcoming<br/>appointments exist?}
-    HAS_APT -->|No| SHOW_NONE[Display Empty<br/>Appointment Message]
-    HAS_APT -->|Yes| SHOW_CARDS[Display Appointment<br/>Cards with Cancel Button]
-    SHOW_CARDS --> HIT_CANCEL{Cancel an<br/>appointment?}
-    HIT_CANCEL -->|Yes| ASK_CONFIRM{User confirms<br/>cancellation?}
-    ASK_CONFIRM -->|Yes| DO_CANCEL_IT[Cancel the<br/>Selected Appointment]
-    ASK_CONFIRM -->|No| SHOW_CARDS
-    HIT_CANCEL -->|No| VIEW_HIST{View service<br/>history now?}
-    VIEW_HIST -->|No| SHOW_CARDS
-    VIEW_HIST -->|Yes| ASK_FILTER{Filter by<br/>category?}
-    ASK_FILTER -->|Show All| SHOW_ALL_HIST[Display Full<br/>Service History]
-    ASK_FILTER -->|By Category| SHOW_FILT_HIST[Display Filtered<br/>Service History]
-    SHOW_ALL_HIST --> SWIPE_CARDS[Scroll through<br/>History Cards]
-    SHOW_FILT_HIST --> SWIPE_CARDS
-    SWIPE_CARDS --> READ_CARD[Read Card Details<br/>Service Type / Cost /<br/>Stylist / Date / Duration]
-    READ_CARD --> CLICK_BOOK{Click + New<br/>to book?}
-    CLICK_BOOK -->|No| SWIPE_CARDS
-    CLICK_BOOK -->|Yes| OPEN_WIZARD[Open Booking<br/>Wizard Modal]
-    OPEN_WIZARD --> STEP_ONE[Step 1 of 4<br/>Pick a Service Type]
-    STEP_ONE --> SVC_PICKED{Service<br/>selected?}
-    SVC_PICKED -->|No| STEP_ONE
-    SVC_PICKED -->|Yes| STEP_TWO[Step 2 of 4<br/>Pick a Stylist]
-    STEP_TWO --> STYL_PICKED{Stylist<br/>selected?}
-    STYL_PICKED -->|No| STEP_TWO
-    STYL_PICKED -->|Yes| STEP_THREE[Step 3 of 4<br/>Pick Date and Time]
-    STEP_THREE --> SLOT_PICKED{Date and time<br/>selected?}
-    SLOT_PICKED -->|No| STEP_THREE
-    SLOT_PICKED -->|Yes| STEP_FOUR[Step 4 of 4<br/>Review Full Summary]
-    STEP_FOUR --> HIT_CONFIRM{Confirmed the<br/>booking?}
-    HIT_CONFIRM -->|No| HIT_BACK{Go back to<br/>previous step?}
-    HIT_BACK -->|Yes| STEP_ONE
-    HIT_BACK -->|No| STEP_FOUR
-    HIT_CONFIRM -->|Yes| SAVE_BOOKING[Save Appointment<br/>as Confirmed]
-    SAVE_BOOKING --> INSPECT_BOOK((Inspect<br/>Booking Result))
-    INSPECT_BOOK --> PLAY_ANIM[Play Success<br/>Animation on Screen]
-    SHOW_NONE --> PLAY_ANIM
-    DO_CANCEL_IT --> PLAY_ANIM
-    PLAY_ANIM --> CLOSE_WIZARD[Close Booking<br/>Modal Window]
-    CLOSE_WIZARD --> CUSTOMER_JUNCTION((Customer<br/>Junction))
-    PROCEED --> CUSTOMER_JUNCTION
-    CUSTOMER_JUNCTION --> ASK_CONTINUE{Continue using<br/>the application?}
-    ASK_CONTINUE -->|Yes| BROWSE_LP
-    ASK_CONTINUE -.->|No| P_END([End])
+    P_START([Start]) --> BROWSE[Browse Landing Page<br/>View Services and Staff]
+    BROWSE --> BOOK{Book Now?}
+    BOOK -->|No| BROWSE
+    BOOK -->|Yes| LOGIN[Open Login Page]
+    LOGIN --> ROLE[Select User Role<br/>Customer or Admin]
+    ROLE --> EMAIL[Type Email Address]
+    EMAIL --> CHECK{Email Provided?}
+    CHECK -->|No| EMAIL
+    CHECK -->|Yes| AUTH[Log User into System]
+    AUTH --> IS_ADMIN{Is User<br/>Admin?}
+    IS_ADMIN -->|Yes| ADMIN_DASH[Display Admin Dashboard]
+    IS_ADMIN -->|No| CUST_DASH[Display Customer Dashboard]
+    ADMIN_DASH --> ADMIN_OPS[Manage Revenue, Customers,<br/>Appointments, and Services]
+    CUST_DASH --> CUST_OPS[Browse History,<br/>Book Appointment, View Profile]
+    ADMIN_OPS --> CONT{Continue?}
+    CUST_OPS --> CONT
+    CONT -->|Yes| BROWSE
+    CONT -->|No| P_END([End])
 ```
 
 ## Project Structure
