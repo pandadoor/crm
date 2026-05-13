@@ -103,7 +103,7 @@ graph TD
 
 ## Process Flowchart
 
-The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through account creation (either via website self-registration or admin panel) and role-based operations, with only essential decision branches.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through account registration or sign-in, and into role-based operations, with only essential decision branches.
 
 ```mermaid
 graph TD
@@ -117,11 +117,11 @@ graph TD
     FILL_REG --> SUBMIT_REG[Submit<br/>Registration]
     SUBMIT_REG --> REG_CHECK{Email already<br/>exists?}
     REG_CHECK -->|Yes| REG_FORM
-    REG_CHECK -->|No| CREATE_ACCT[Create Customer<br/>Account in Database]
-    CREATE_ACCT --> AUTO_LOGIN[Auto-Login and<br/>Redirect to Dashboard]
+    REG_CHECK -->|No| CREATE_ACCT[Create Account<br/>and Log In]
+    CREATE_ACCT --> CUST_DASH[Display Customer Dashboard]
 
-    HAS_ACCT -->|Yes| LOGIN_FORM[Sign-in Form]
-    LOGIN_FORM --> ROLE[Select User Role<br/>Customer or Admin]
+    HAS_ACCT -->|Yes| SIGN_IN[Sign-in Form]
+    SIGN_IN --> ROLE[Select User Role<br/>Customer or Admin]
     ROLE --> EMAIL[Type Email Address]
     EMAIL --> CHECK{Email Provided?}
     CHECK -->|No| EMAIL
@@ -131,15 +131,7 @@ graph TD
     IS_ADMIN -->|No| CUST_DASH[Display Customer Dashboard]
 
     ADMIN_DASH --> ADMIN_OPS[Manage Revenue, Customers,<br/>Appointments, and Services]
-    ADMIN_DASH --> CREATE_CUST{Create new<br/>customer?}
-    CREATE_CUST -->|Yes| ADMIN_REG[Admin Fills<br/>Customer Name Email Phone]
-    ADMIN_REG --> ADMIN_SUBMIT[Submit Customer<br/>Registration]
-    ADMIN_SUBMIT --> ADMIN_SAVE[Save to<br/>Customer Database]
-    ADMIN_SAVE --> ADMIN_DASH
-    CREATE_CUST -->|No| ADMIN_OPS
-
     CUST_DASH --> CUST_OPS[Browse History,<br/>Book Appointment, View Profile]
-    AUTO_LOGIN --> CUST_OPS
     ADMIN_OPS --> CONT{Continue?}
     CUST_OPS --> CONT
     CONT -->|Yes| BROWSE
