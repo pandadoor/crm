@@ -50,7 +50,7 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates the end-to-end request flow within the Salon CRM — from browser request through routing, authentication, role-based UI rendering, database operations, and page output.
+The system flowchart illustrates the end-to-end request flow within the Salon CRM — from browser request through routing, authentication, role-based UI rendering, client-side data persistence via localStorage, and page output.
 
 ```mermaid
 graph TD
@@ -60,42 +60,42 @@ graph TD
     D --> A
     C -->|Yes| E[Load Page Components]
     E --> F{Auth Required?}
-    F -->|No| G[/Landing Page<br/>to User/]
+    F -->|No| G[/Landing Page<br/>Displayed to User/]
     G --> Z([End])
     F -->|Yes| H[/Login Form<br/>Displayed/]
     H --> I{Email &<br/>Password Provided?}
     I -->|No| H
-    I -->|Yes| J[Authenticate<br/>User Credentials]
+    I -->|Yes| J[Authenticate User<br/>Select Role]
     J --> K{Is Admin?}
     K -->|Yes| L[Admin Dashboard]
     K -->|No| M[Customer Dashboard]
 
-    L --> N[Load Admin Operations]
-    N --> O{Manage<br/>Options}
-    O -->|Revenue| O1[Revenue Metrics]
-    O -->|Customers| O2[Customer Directory]
-    O -->|Appointments| O3[Appointment Queue]
-    O -->|Services| O4[Service Records]
-    O1 --> O5[(Admin Database<br/>Write/Read)]
-    O2 --> O5
-    O3 --> O5
-    O4 --> O5
+    L --> N[Admin Operations]
+    N --> O{Admin Action}
+    O -->|View Revenue| O1[Revenue Metrics]
+    O -->|Manage Customers| O2[Customer Directory]
+    O -->|View Appointments| O3[Appointment Queue]
+    O -->|Record Service| O4[Service Recording Form]
+    O1 --> P1[(localStorage:<br/>appointments, customers,<br/>services, emailLog)]
+    O2 --> P1
+    O3 --> P1
+    O4 --> P1
 
-    M --> P[Load Customer Operations]
-    P --> Q{Manage<br/>Options}
-    Q -->|Stats| Q1[Stats Cards]
-    Q -->|History| Q2[Service History]
-    Q -->|Bookings| Q3[Book Appointments<br/>4-Step Wizard]
-    Q -->|Profile| Q4[User Profile]
-    Q1 --> Q5[(User Database<br/>Write/Read)]
-    Q2 --> Q5
-    Q3 --> Q5
-    Q4 --> Q5
+    M --> Q[Customer Operations]
+    Q --> R{Customer Action}
+    R -->|View Stats| R1[Stats Cards]
+    R -->|View History| R2[Service History]
+    R -->|Book Appointment| R3[4-Step Booking Wizard]
+    R -->|Edit Profile| R4[Profile Management]
+    R1 --> P2[(localStorage:<br/>appointments, customers,<br/>services, emailLog)]
+    R2 --> P2
+    R3 --> P2
+    R4 --> P2
 
-    O5 --> R[/Admin Dashboard<br/>Rendered/]
-    Q5 --> S[/Customer Dashboard<br/>Rendered/]
-    R --> T([Session End])
-    S --> T
+    P1 --> S[/Admin Dashboard<br/>Rendered/]
+    P2 --> T[/Customer Dashboard<br/>Rendered/]
+    S --> U([Session End])
+    T --> U
 ```
 
 ## Process Flowchart
