@@ -1,15 +1,20 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, User, Lock, Sparkles, ShieldCheck, Scissors, ArrowLeft } from 'lucide-react';
+import { LogIn, User, Lock, Sparkles, ShieldCheck, Scissors, ArrowLeft, UserPlus, Mail, Phone } from 'lucide-react';
 import { useSalon } from '../context/SalonContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('customer');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regError, setRegError] = useState('');
   const navigate = useNavigate();
-  const { login } = useSalon();
+  const { login, registerCustomer } = useSalon();
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
@@ -18,6 +23,17 @@ export default function Login() {
       navigate('/admin');
     } else {
       navigate('/customer');
+    }
+  };
+
+  const handleRegister = (e: FormEvent) => {
+    e.preventDefault();
+    setRegError('');
+    const success = registerCustomer(regName, regEmail, regPhone);
+    if (success) {
+      navigate('/customer');
+    } else {
+      setRegError('An account with this email already exists.');
     }
   };
 
@@ -68,10 +84,10 @@ export default function Login() {
             <Scissors size={28} color="#8b5cf6" />
           </div>
           <div className="premium-gradient-text" style={{ fontSize: 28, fontWeight: 'bold' }}>
-            Welcome Back
+            {isRegistering ? 'Create Account' : 'Welcome Back'}
           </div>
           <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
-            Sign in to your salon portal
+            {isRegistering ? 'Join our salon community today' : 'Sign in to your salon portal'}
           </p>
         </div>
 
@@ -133,15 +149,99 @@ export default function Login() {
           </motion.button>
         </form>
 
-        <div style={{
-          padding: 16, borderRadius: 12,
-          background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.1)',
-          fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6
-        }}>
-          <strong style={{ color: '#8b5cf6' }}>Demo Accounts:</strong><br />
-          Customer: <strong>customer@example.com</strong> | Admin: <strong>admin@salon.com</strong><br />
-          <span style={{ fontSize: 11 }}>(Any password works)</span>
-        </div>
+        {isRegistering ? (
+          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ position: 'relative' }}>
+              <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="text" placeholder="Full Name" value={regName}
+                onChange={e => setRegName(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="email" placeholder="Email Address" value={regEmail}
+                onChange={e => setRegEmail(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Phone size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="tel" placeholder="Phone Number" value={regPhone}
+                onChange={e => setRegPhone(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            {regError && (
+              <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{regError}</p>
+            )}
+            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+              type="submit" className="premium-btn"
+              style={{ padding: 14, fontSize: 15, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <UserPlus size={18} /> Create Account & Enter Dashboard
+            </motion.button>
+            <button type="button" onClick={() => setIsRegistering(false)}
+              style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 13, textAlign: 'center' }}>
+              Already have an account? Sign in
+            </button>
+          </form>
+        ) : (
+          <>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ position: 'relative' }}>
+                <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
+                  required
+                />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
+                  required
+                />
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit"
+                className="premium-btn"
+                style={{
+                  padding: 14, fontSize: 15, marginTop: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                }}
+              >
+                <LogIn size={18} />
+                {role === 'admin' ? 'Access Admin Portal' : 'Enter Customer Dashboard'}
+              </motion.button>
+            </form>
+
+            <div style={{
+              padding: 16, borderRadius: 12,
+              background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.1)',
+              fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6
+            }}>
+              <strong style={{ color: '#8b5cf6' }}>Demo Accounts:</strong><br />
+              Customer: <strong>customer@example.com</strong> | Admin: <strong>admin@salon.com</strong><br />
+              <span style={{ fontSize: 11 }}>(Any password works)</span>
+            </div>
+
+            <button onClick={() => setIsRegistering(true)}
+              style={{
+                background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer',
+                fontSize: 13, textAlign: 'center', padding: 0
+              }}>
+              <UserPlus size={14} style={{ marginRight: 6, display: 'inline' }} />
+              New customer? Create an account
+            </button>
+          </>
+        )}
       </motion.div>
     </div>
   );

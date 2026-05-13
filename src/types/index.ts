@@ -69,4 +69,5 @@ export interface SalonContextType {
   currentUser: string | null;
   login: (email: string) => void;
   logout: () => void;
+  registerCustomer: (name: string, email: string, phone: string) => boolean;
 }

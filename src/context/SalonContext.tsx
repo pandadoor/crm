@@ -84,6 +84,11 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
 
   const [currentUser, setCurrentUser] = useState<string | null>(null);
 
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    const saved = localStorage.getItem('salon_customers');
+    return saved ? JSON.parse(saved) : CUSTOMERS;
+  });
+
   useEffect(() => {
     localStorage.setItem('salon_services', JSON.stringify(services));
   }, [services]);
@@ -91,6 +96,10 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
   useEffect(() => {
     localStorage.setItem('salon_appointments', JSON.stringify(appointments));
   }, [appointments]);
+
+  useEffect(() => {
+    localStorage.setItem('salon_customers', JSON.stringify(customers));
+  }, [customers]);
 
   const recordService = (newService: Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string }) => {
     setServices(prev => [{
@@ -143,13 +152,30 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     setCurrentUser(null);
   };
 
+  const registerCustomer = (name: string, email: string, phone: string): boolean => {
+    if (customers.some(c => c.email === email)) return false;
+    const newCustomer: Customer = {
+      id: Date.now(),
+      name,
+      email,
+      phone,
+      status: 'Active',
+      joinDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      totalVisits: 0,
+      lifetimeValue: 0,
+    };
+    setCustomers(prev => [...prev, newCustomer]);
+    setCurrentUser(email);
+    return true;
+  };
+
   return (
     <SalonContext.Provider value={{
       services, categories: CATEGORIES, recordService,
       appointments, bookAppointment, cancelAppointment, completeAppointment,
-      staff: STAFF, customers: CUSTOMERS,
+      staff: STAFF, customers,
       serviceMenu: SERVICE_MENU, timeSlots: TIME_SLOTS,
-      currentUser, login, logout
+      currentUser, login, logout, registerCustomer
     }}>
       {children}
     </SalonContext.Provider>

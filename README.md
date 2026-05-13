@@ -8,6 +8,7 @@ A premium salon CRM with customer booking, admin dashboard, analytics, and staff
 - **Customer Dashboard** -- Stats cards, service history carousel with drag/swipe, upcoming appointments, booking modal (4-step flow)
 - **Admin Dashboard** -- Revenue chart, customer database with search, appointment queue with complete/cancel, service recording, staff directory
 - **Authentication** -- Role selector (Customer/Admin), demo credentials hint
+- **Account Creation** -- Self-registration from website or admin-panel creation
 - **Responsive** -- Full mobile support with glassmorphism UI
 
 ## Stack
@@ -47,7 +48,7 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates how browser requests, page processes, databases, and display outputs interact within the Salon CRM.
+The system flowchart illustrates how browser requests, page processes, databases, account creation, and display outputs interact within the Salon CRM. Customer accounts can be created from two entry points: website self-registration and admin panel.
 
 ```mermaid
 graph TD
@@ -78,6 +79,22 @@ graph TD
     MANAGE_CUST --> STORE_CUST[(User Records<br/>Database)]
     STORE_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
     STORE_CUST --> SEED_IN
+
+    LOGIN --> NEW_USER{New user?}
+    NEW_USER -->|Yes| REG_FORM[/Registration Form<br/>Displayed to User/]
+    NEW_USER -->|No| USER_TYPES
+    REG_FORM --> REG_INPUT[/User Enters<br/>Name Email Phone\]
+    REG_INPUT --> REG_SAVE[Create Customer<br/>Account Record]
+    REG_SAVE --> REG_STORE[(Customer Database)]
+    REG_SAVE --> AUTO_LOGIN[Auto-Login and<br/>Redirect to Dashboard]
+    AUTO_LOGIN --> CUSTOMER_DASH
+
+    ADMIN_DASH --> CREATE_CUST[Admin Opens<br/>Create Customer Form]
+    CREATE_CUST --> ADMIN_REG[/Admin Fills<br/>Name Email Phone\]
+    ADMIN_REG --> ADMIN_SAVE[Create Customer<br/>Account Record]
+    ADMIN_SAVE --> REG_STORE
+    ADMIN_SAVE --> ADMIN_DASH
+
     SEED_IN --> RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
     RETRIEVE --> MERGE[Aggregate Admin and Customer Data]
     MERGE --> FINAL[/Final Page Output<br/>Displayed to User/]
@@ -86,7 +103,7 @@ graph TD
 
 ## Process Flowchart
 
-The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- following a straight linear procedure from arrival through authentication and role-based operations, with only essential decision branches.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through account creation (either via website self-registration or admin panel) and role-based operations, with only essential decision branches.
 
 ```mermaid
 graph TD
@@ -94,7 +111,17 @@ graph TD
     BROWSE --> BOOK{Book Now?}
     BOOK -->|No| BROWSE
     BOOK -->|Yes| LOGIN[Open Login Page]
-    LOGIN --> ROLE[Select User Role<br/>Customer or Admin]
+    LOGIN --> HAS_ACCT{Have an<br/>account?}
+    HAS_ACCT -->|No| REG_FORM[Display<br/>Registration Form]
+    REG_FORM --> FILL_REG[Enter Name,<br/>Email, and Phone]
+    FILL_REG --> SUBMIT_REG[Submit<br/>Registration]
+    SUBMIT_REG --> REG_CHECK{Email already<br/>exists?}
+    REG_CHECK -->|Yes| REG_FORM
+    REG_CHECK -->|No| CREATE_ACCT[Create Customer<br/>Account in Database]
+    CREATE_ACCT --> AUTO_LOGIN[Auto-Login and<br/>Redirect to Dashboard]
+
+    HAS_ACCT -->|Yes| LOGIN_FORM[Sign-in Form]
+    LOGIN_FORM --> ROLE[Select User Role<br/>Customer or Admin]
     ROLE --> EMAIL[Type Email Address]
     EMAIL --> CHECK{Email Provided?}
     CHECK -->|No| EMAIL
@@ -102,8 +129,17 @@ graph TD
     AUTH --> IS_ADMIN{Is User<br/>Admin?}
     IS_ADMIN -->|Yes| ADMIN_DASH[Display Admin Dashboard]
     IS_ADMIN -->|No| CUST_DASH[Display Customer Dashboard]
+
     ADMIN_DASH --> ADMIN_OPS[Manage Revenue, Customers,<br/>Appointments, and Services]
+    ADMIN_DASH --> CREATE_CUST{Create new<br/>customer?}
+    CREATE_CUST -->|Yes| ADMIN_REG[Admin Fills<br/>Customer Name Email Phone]
+    ADMIN_REG --> ADMIN_SUBMIT[Submit Customer<br/>Registration]
+    ADMIN_SUBMIT --> ADMIN_SAVE[Save to<br/>Customer Database]
+    ADMIN_SAVE --> ADMIN_DASH
+    CREATE_CUST -->|No| ADMIN_OPS
+
     CUST_DASH --> CUST_OPS[Browse History,<br/>Book Appointment, View Profile]
+    AUTO_LOGIN --> CUST_OPS
     ADMIN_OPS --> CONT{Continue?}
     CUST_OPS --> CONT
     CONT -->|Yes| BROWSE

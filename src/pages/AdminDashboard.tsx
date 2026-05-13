@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import StatsCard from '../components/StatsCard';
-import { Users, Scissors, DollarSign, TrendingUp, Calendar, Bell, Plus, History, LogOut, Search, Star, Clock, User, Check, X, Sparkles } from 'lucide-react';
-import type { ServiceHistoryItem } from '../types';
+import { Users, Scissors, DollarSign, TrendingUp, Calendar, Bell, Plus, History, LogOut, Search, Star, Clock, User, Check, X, Sparkles, UserPlus, Mail, Phone } from 'lucide-react';
+import type { Customer, ServiceHistoryItem } from '../types';
 
 interface RecordServiceViewProps {
   categories: string[];
@@ -110,11 +110,92 @@ function RecordServiceView({ categories, recordService, setView }: RecordService
   );
 }
 
+function CreateCustomerModal({ onClose }: { onClose: () => void }) {
+  const { registerCustomer, customers } = useSalon();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    const ok = registerCustomer(name, email, phone);
+    if (!ok) {
+      setError('A customer with this email already exists.');
+    } else {
+      setSuccess(true);
+      setTimeout(onClose, 1200);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)'
+    }}>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="glass" style={{ padding: 32, width: '100%', maxWidth: 420 }}>
+        {success ? (
+          <div style={{ textAlign: 'center', padding: 20 }}>
+            <Check size={40} color="#22c55e" style={{ marginBottom: 12 }} />
+            <p style={{ fontSize: 16, fontWeight: 600 }}>Customer Created!</p>
+          </div>
+        ) : (
+          <>
+            <h2 style={{ fontSize: 18, marginBottom: 24 }}>Create Customer Account</h2>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Full Name
+                </label>
+                <input type="text" placeholder="e.g. Jane Doe" required
+                  value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Email Address
+                </label>
+                <input type="email" placeholder="jane@example.com" required
+                  value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Phone Number
+                </label>
+                <input type="tel" placeholder="+1 (555) 000-0000" required
+                  value={phone} onChange={e => setPhone(e.target.value)} />
+              </div>
+              {error && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{error}</p>}
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <button type="button" onClick={onClose}
+                  style={{
+                    flex: 1, padding: 12, borderRadius: 10, cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'var(--text-secondary)', fontSize: 14
+                  }}>
+                  Cancel
+                </button>
+                <button type="submit" className="premium-btn" style={{ flex: 1, padding: 12, fontSize: 14 }}>
+                  <UserPlus size={16} style={{ marginRight: 6 }} /> Create
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { services, appointments, staff, customers, categories, recordService, completeAppointment } = useSalon();
   const [view, setView] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const totalRevenue = services.reduce((s, sv) => s + sv.cost, 0);
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
@@ -131,6 +212,7 @@ export default function AdminDashboard() {
   );
 
   return (
+    <>
     <div className="layout-container" style={{ padding: '24px 40px 60px', background: '#050505', minHeight: '100vh' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         {/* Header */}
@@ -268,17 +350,24 @@ export default function AdminDashboard() {
         {view === 'customers' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="glass" style={{ padding: 28 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18 }}>Customer Database</h2>
-                <div style={{ position: 'relative', width: 280 }}>
-                  <Search size={16} style={{ position: 'absolute', left: 14, top: 12, color: 'var(--text-secondary)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search customers..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    style={{ paddingLeft: 40, padding: '10px 14px 10px 40', fontSize: 13 }}
-                  />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 16 }}>
+                <h2 style={{ fontSize: 18, whiteSpace: 'nowrap' }}>Customer Database</h2>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
+                  <div style={{ position: 'relative', width: 240 }}>
+                    <Search size={16} style={{ position: 'absolute', left: 14, top: 12, color: 'var(--text-secondary)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search customers..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      style={{ paddingLeft: 40, padding: '10px 14px 10px 40', fontSize: 13, width: '100%' }}
+                    />
+                  </div>
+                  <button onClick={() => setShowCreateModal(true)}
+                    className="premium-btn"
+                    style={{ padding: '10px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                    <UserPlus size={16} /> Create Customer
+                  </button>
                 </div>
               </div>
 
@@ -462,5 +551,7 @@ export default function AdminDashboard() {
         )}
       </div>
     </div>
+      {showCreateModal && <CreateCustomerModal onClose={() => setShowCreateModal(false)} />}
+    </>
   );
 }
