@@ -91,132 +91,46 @@ export default function Login() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          {([
-            { id: 'customer', label: 'Customer', icon: User },
-            { id: 'admin', label: 'Admin', icon: ShieldCheck },
-          ] as const).map(r => (
-            <button key={r.id} onClick={() => setRole(r.id)}
-              style={{
-                flex: 1, padding: '12px', borderRadius: 10, cursor: 'pointer',
-                border: `1px solid ${role === r.id ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                background: role === r.id ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.02)',
-                color: 'white', fontSize: 13, fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'all 0.2s'
-              }}>
-              <r.icon size={16} color={role === r.id ? '#8b5cf6' : 'var(--text-secondary)'} />
-              {r.label}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ position: 'relative' }}>
-            <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-            <input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
-              required
-            />
+        {!isRegistering && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {([
+              { id: 'customer', label: 'Customer', icon: User },
+              { id: 'admin', label: 'Admin', icon: ShieldCheck },
+            ] as const).map(r => (
+              <button key={r.id} onClick={() => setRole(r.id)}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: 10, cursor: 'pointer',
+                  border: `1px solid ${role === r.id ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.06)'}`,
+                  background: role === r.id ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.02)',
+                  color: 'white', fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'all 0.2s'
+                }}>
+                <r.icon size={16} color={role === r.id ? '#8b5cf6' : 'var(--text-secondary)'} />
+                {r.label}
+              </button>
+            ))}
           </div>
-          <div style={{ position: 'relative' }}>
-            <Lock size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
-              required
-            />
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="submit"
-            className="premium-btn"
-            style={{
-              padding: 14, fontSize: 15, marginTop: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-            }}
-          >
-            <LogIn size={18} />
-            {role === 'admin' ? 'Access Admin Portal' : 'Enter Customer Dashboard'}
-          </motion.button>
-        </form>
+        )}
 
-        {isRegistering ? (
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ position: 'relative' }}>
-              <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-              <input type="text" placeholder="Full Name" value={regName}
-                onChange={e => setRegName(e.target.value)}
-                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
-            </div>
-            <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-              <input type="email" placeholder="Email Address" value={regEmail}
-                onChange={e => setRegEmail(e.target.value)}
-                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
-            </div>
-            <div style={{ position: 'relative' }}>
-              <Phone size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-              <input type="tel" placeholder="Phone Number" value={regPhone}
-                onChange={e => setRegPhone(e.target.value)}
-                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
-            </div>
-            {regError && (
-              <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{regError}</p>
-            )}
-            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-              type="submit" className="premium-btn"
-              style={{ padding: 14, fontSize: 15, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <UserPlus size={18} /> Create Account & Enter Dashboard
-            </motion.button>
-            <button type="button" onClick={() => setIsRegistering(false)}
-              style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 13, textAlign: 'center' }}>
-              Already have an account? Sign in
-            </button>
-          </form>
-        ) : (
+        {!isRegistering ? (
           <>
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ position: 'relative' }}>
                 <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
+                <input type="email" placeholder="Email Address" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
-                  required
-                />
+                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
+                <input type="password" placeholder="Password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }}
-                  required
-                />
+                  style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
               </div>
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                type="submit"
-                className="premium-btn"
-                style={{
-                  padding: 14, fontSize: 15, marginTop: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                }}
-              >
+              <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                type="submit" className="premium-btn"
+                style={{ padding: 14, fontSize: 15, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <LogIn size={18} />
                 {role === 'admin' ? 'Access Admin Portal' : 'Enter Customer Dashboard'}
               </motion.button>
@@ -241,6 +155,37 @@ export default function Login() {
               New customer? Create an account
             </button>
           </>
+        ) : (
+          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ position: 'relative' }}>
+              <User size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="text" placeholder="Full Name" value={regName}
+                onChange={e => setRegName(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="email" placeholder="Email Address" value={regEmail}
+                onChange={e => setRegEmail(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Phone size={16} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-secondary)' }} />
+              <input type="tel" placeholder="Phone Number" value={regPhone}
+                onChange={e => setRegPhone(e.target.value)}
+                style={{ paddingLeft: 42, padding: '14px 14px 14px 42' }} required />
+            </div>
+            {regError && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{regError}</p>}
+            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+              type="submit" className="premium-btn"
+              style={{ padding: 14, fontSize: 15, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <UserPlus size={18} /> Create Account & Enter Dashboard
+            </motion.button>
+            <button type="button" onClick={() => setIsRegistering(false)}
+              style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 13, textAlign: 'center' }}>
+              Already have an account? Sign in
+            </button>
+          </form>
         )}
       </motion.div>
     </div>

@@ -209,11 +209,11 @@ export default function AdminDashboard() {
     <div className="layout-container" style={{ padding: '24px 40px 60px', background: '#050505', minHeight: '100vh' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <div>
-            <h1 className="premium-gradient-text" style={{ fontSize: 30, fontWeight: 'bold' }}>Admin Control Center</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Centralized intelligence for your salon operations.</p>
-          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+            <div>
+              <h1 className="premium-gradient-text" style={{ fontSize: 30, fontWeight: 'bold' }}>Admin Control Center</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Manage appointments, customers, and services</p>
+            </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button onClick={() => navigate('/login')}
               style={{
@@ -251,50 +251,92 @@ export default function AdminDashboard() {
         {/* Overview */}
         {view === 'overview' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-              <StatsCard title="Active Customers" value={activeCustomers} icon={Users} color="#8b5cf6" subtitle="Currently active" />
-              <StatsCard title="Pending Appointments" value={pendingAppointments} icon={Calendar} color="#ec4899" subtitle="Awaiting service" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+              <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+                <StatsCard title="Active Customers" value={activeCustomers} icon={Users} color="#8b5cf6" subtitle="Currently active" />
+              </motion.div>
+              <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+                <StatsCard title="Pending Appointments" value={pendingAppointments} icon={Calendar} color="#ec4899" subtitle="Awaiting service" />
+              </motion.div>
             </div>
 
             {/* Recent Activity */}
-            <div className="glass" style={{ padding: 28, marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Recent Activity</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {emailLog.slice(0, 6).map(entry => (
-                  <div key={entry.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="glass" style={{ padding: 28, marginBottom: 24, border: '1px solid rgba(139,92,246,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Bell size={16} color="#8b5cf6" />
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 600 }}>Email Notification Log</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {emailLog.slice(0, 6).map((entry, idx) => (
+                  <motion.div key={entry.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
+                    style={{
+                      padding: '12px 14px', borderRadius: 10,
+                      background: entry.type === 'booking_confirmed' ? 'rgba(34,197,94,0.03)' : entry.type === 'booking_cancelled' ? 'rgba(239,68,68,0.03)' : 'rgba(139,92,246,0.03)',
+                      border: `1px solid ${
+                        entry.type === 'booking_confirmed' ? 'rgba(34,197,94,0.08)' :
+                        entry.type === 'booking_cancelled' ? 'rgba(239,68,68,0.08)' : 'rgba(139,92,246,0.08)'
+                      }`,
+                      display: 'flex', gap: 10, alignItems: 'flex-start'
+                    }}>
                     <div style={{
-                      width: 32, height: 32, borderRadius: 8,
+                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
                       background: entry.type === 'booking_confirmed' ? 'rgba(34,197,94,0.1)' : entry.type === 'booking_cancelled' ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.1)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                      {entry.type === 'booking_confirmed' ? <Check size={14} color="#22c55e" /> :
-                       entry.type === 'booking_cancelled' ? <X size={14} color="#ef4444" /> : <Bell size={14} color="#8b5cf6" />}
+                      {entry.type === 'booking_confirmed' ? <Check size={13} color="#22c55e" /> :
+                       entry.type === 'booking_cancelled' ? <X size={13} color="#ef4444" /> : <Bell size={13} color="#8b5cf6" />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.subject}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>To: {entry.to} &middot; {new Date(entry.sentAt).toLocaleString()}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
+                        To: <strong style={{ color: 'rgba(255,255,255,0.6)' }}>{entry.to}</strong> · {new Date(entry.sentAt).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
                 {emailLog.length === 0 && (
-                  <p style={{ color: 'var(--text-secondary)', textAlign: 'center', fontSize: 13 }}>No email notifications sent yet.</p>
+                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
+                    <Bell size={32} style={{ opacity: 0.15, margin: '0 auto 10px', display: 'block' }} />
+                    No email notifications sent yet.
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="glass" style={{ padding: 28 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Quick Actions</h3>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <button onClick={() => setView('services')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Plus size={16} color="#8b5cf6" /> Record New Service
-                </button>
-                <button onClick={() => setView('customers')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Users size={16} color="#8b5cf6" /> Manage Customers
-                </button>
-                <button onClick={() => setView('appointments')} className="glass" style={{ padding: '14px 24px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Calendar size={16} color="#8b5cf6" /> View Appointments
-                </button>
+            <div className="glass" style={{ padding: 28, border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={16} color="#f59e0b" />
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 600 }}>Quick Actions</h3>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'services', label: 'Record New Service', icon: Plus, color: '#8b5cf6' },
+                  { id: 'customers', label: 'Manage Customers', icon: Users, color: '#22c55e' },
+                  { id: 'appointments', label: 'View Appointments', icon: Calendar, color: '#ec4899' },
+                ].map(action => (
+                  <motion.button key={action.id} onClick={() => setView(action.id)}
+                    whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}
+                    className="glass"
+                    style={{
+                      padding: '16px 24px', color: 'white', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 12, transition: 'all 0.2s'
+                    }}>
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 8,
+                      background: `${action.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <action.icon size={16} color={action.color} />
+                    </div>
+                    <span style={{ fontWeight: 500 }}>{action.label}</span>
+                  </motion.button>
+                ))}
               </div>
             </div>
           </motion.div>
@@ -396,15 +438,28 @@ export default function AdminDashboard() {
         {/* Appointments */}
         {view === 'appointments' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="glass" style={{ padding: 28 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 20 }}>Appointment Queue</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {appointments.filter(a => a.status !== 'cancelled').map(apt => (
-                  <div key={apt.id} style={{
-                    padding: 20, borderRadius: 12,
-                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                  }}>
+            <div className="glass" style={{ padding: 28, border: '1px solid rgba(139,92,246,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(236,72,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={16} color="#ec4899" />
+                </div>
+                <h2 style={{ fontSize: 18 }}>Appointment Queue</h2>
+                <span style={{
+                  marginLeft: 'auto', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 600,
+                  background: 'rgba(236,72,153,0.1)', color: '#ec4899'
+                }}>
+                  {appointments.filter(a => a.status !== 'cancelled').length} upcoming
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {appointments.filter(a => a.status !== 'cancelled').map((apt, idx) => (
+                  <motion.div key={apt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                    style={{
+                      padding: '18px 20px', borderRadius: 12,
+                      background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.02)' : 'rgba(139,92,246,0.02)',
+                      border: `1px solid ${apt.status === 'confirmed' ? 'rgba(34,197,94,0.08)' : 'rgba(139,92,246,0.08)'}`,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
                     <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                       <div style={{
                         width: 44, height: 44, borderRadius: 12,
@@ -439,7 +494,7 @@ export default function AdminDashboard() {
                         </button>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
                 {appointments.filter(a => a.status !== 'cancelled').length === 0 && (
                   <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: 20 }}>No appointments yet.</p>
