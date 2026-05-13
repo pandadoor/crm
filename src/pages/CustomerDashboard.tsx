@@ -1,18 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import StatsCard from '../components/StatsCard';
 import BookingModal from '../components/BookingModal';
-import { Calendar, User, DollarSign, Scissors, Sparkles, Filter, History, LogOut, Phone, Mail, CalendarCheck, MapPin, Clock3 } from 'lucide-react';
+import { Calendar, User, Scissors, Sparkles, Filter, History, LogOut, Phone, Mail, CalendarCheck, MapPin, Clock3, Bell } from 'lucide-react';
 import type { ServiceHistoryItem } from '../types';
 
-function ServiceHistoryCard({ services = [], visibleBehind = 2 }: { services: ServiceHistoryItem[]; visibleBehind?: number }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const dragStartRef = useRef(0);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+function ServiceHistoryTimeline({ services = [] }: { services: ServiceHistoryItem[] }) {
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   if (!services || services.length === 0) return (
     <div className="glass" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -21,163 +17,85 @@ function ServiceHistoryCard({ services = [], visibleBehind = 2 }: { services: Se
     </div>
   );
 
-  const totalCards = services.length;
-
-  const navigate = useCallback((newIndex: number) => {
-    if (totalCards === 0) return;
-    setActiveIndex((newIndex + totalCards) % totalCards);
-  }, [totalCards]);
-
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, index: number) => {
-    if (index !== activeIndex) return;
-    setIsDragging(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    dragStartRef.current = clientX;
-    cardRefs.current[activeIndex]?.classList.add('is-dragging');
-  };
-
-  const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!isDragging) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    setDragOffset(clientX - dragStartRef.current);
-  }, [isDragging]);
-
-  const handleDragEnd = useCallback(() => {
-    if (!isDragging) return;
-    cardRefs.current[activeIndex]?.classList.remove('is-dragging');
-    if (Math.abs(dragOffset) > 50) {
-      navigate(activeIndex + (dragOffset < 0 ? 1 : -1));
-    }
-    setIsDragging(false);
-    setDragOffset(0);
-  }, [isDragging, dragOffset, activeIndex, navigate]);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleDragMove);
-      window.addEventListener('touchmove', handleDragMove);
-      window.addEventListener('mouseup', handleDragEnd);
-      window.addEventListener('touchend', handleDragEnd);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleDragMove);
-      window.removeEventListener('touchmove', handleDragMove);
-      window.removeEventListener('mouseup', handleDragEnd);
-      window.removeEventListener('touchend', handleDragEnd);
-    };
-  }, [isDragging, handleDragMove, handleDragEnd]);
-
-  const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-
   return (
-    <section style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}>
-      <style>{`
-        .sc-card { position: absolute; top: 0; left: 0; right: 0; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease; cursor: grab; }
-        .sc-card.is-dragging { cursor: grabbing; transition: none; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; cursor: pointer; transition: all 0.3s; }
-        .dot.active { background: #8b5cf6; width: 24px; border-radius: 4px; }
-      `}</style>
-
-      <div style={{ height: 380, position: 'relative' }}>
-        {services.map((service, index) => {
-          const displayOrder = (index - activeIndex + totalCards) % totalCards;
-          const style: React.CSSProperties = {};
-
-          if (displayOrder === 0) {
-            style.transform = `translateX(${dragOffset}px)`;
-            style.opacity = 1; style.zIndex = totalCards;
-          } else if (displayOrder <= visibleBehind) {
-            const scale = 1 - 0.05 * displayOrder;
-            const translateY = -2 * displayOrder;
-            style.transform = `scale(${scale}) translateY(${translateY}rem)`;
-            style.opacity = 1 - 0.2 * displayOrder;
-            style.zIndex = totalCards - displayOrder;
-          } else {
-            style.transform = 'scale(0)'; style.opacity = 0; style.zIndex = 0;
-          }
-
+    <div style={{ position: 'relative', paddingLeft: 32 }}>
+      <div style={{
+        position: 'absolute', left: 11, top: 8, bottom: 8, width: 2,
+        background: 'linear-gradient(180deg, rgba(139,92,246,0.4), rgba(217,70,239,0.1))',
+        borderRadius: 1
+      }} />
+      <AnimatePresence>
+        {services.map((service, idx) => {
+          const isExpanded = expandedId === service.id;
           return (
-            <div
-              ref={el => { if (el) cardRefs.current[index] = el; }}
+            <motion.div
               key={service.id}
-              className="sc-card"
-              style={{
-                ...style,
-                background: 'rgba(255,255,255,0.04)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 16, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-                overflow: 'hidden'
-              }}
-              onMouseDown={(e) => handleDragStart(e, index)}
-              onTouchStart={(e) => handleDragStart(e, index)}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.3 }}
+              style={{ position: 'relative', marginBottom: 16 }}
             >
-              <div style={{ padding: 28 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <motion.div whileHover={{ scale: 1.05, rotate: 5 }}
-                      style={{
-                        width: 56, height: 56, borderRadius: 14,
-                        background: service.gradient,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              <div style={{
+                position: 'absolute', left: -27, top: 20, width: 12, height: 12,
+                borderRadius: '50%', border: '2px solid rgba(139,92,246,0.5)',
+                background: service.gradient || '#8b5cf6',
+                boxShadow: '0 0 8px rgba(139,92,246,0.3)',
+                zIndex: 1
+              }} />
+              <div
+                onClick={() => setExpandedId(isExpanded ? null : service.id)}
+                className="glass"
+                style={{
+                  padding: 18, borderRadius: 12, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={11} /> {service.date}
+                    </div>
+                    <h4 style={{ fontSize: 16, fontWeight: 600, marginBottom: 2 }}>{service.serviceType}</h4>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <User size={11} /> {service.stylist}
+                      </span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
+                        background: 'rgba(139,92,246,0.1)', color: '#8b5cf6'
                       }}>
-                      <Scissors size={28} color="white" />
-                    </motion.div>
-                    <div>
-                      <h3 style={{ fontSize: 20, fontWeight: 'bold' }}>{service.serviceType}</h3>
-                      <p style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                        <Calendar size={13} /> {service.date}
-                      </p>
+                        {service.category}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Clock3 size={10} /> {service.duration}
+                      </span>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="premium-gradient-text" style={{ fontSize: 24, fontWeight: 'bold' }}>
-                      {currency.format(service.cost)}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 2 }}>
-                      <Scissors size={12} /> {service.duration}
-                    </div>
-                  </div>
+                  <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
+                    <Sparkles size={14} color="var(--text-secondary)" style={{ opacity: 0.4 }} />
+                  </motion.div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                  <div className="glass" style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
-                      <User size={11} /> Stylist
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+                      <div><span style={{ color: 'white', fontWeight: 500 }}>Service:</span> {service.serviceType}</div>
+                      <div><span style={{ color: 'white', fontWeight: 500 }}>Duration:</span> {service.duration}</div>
                     </div>
-                    <p style={{ fontWeight: 600, fontSize: 15 }}>{service.stylist}</p>
-                  </div>
-                  <div className="glass" style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
-                      <Scissors size={11} /> Category
-                    </div>
-                    <p style={{ fontWeight: 600, fontSize: 15 }}>{service.category}</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', fontSize: 10, fontWeight: 700 }}>COMPLETED</span>
-                    <span style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}>PREMIUM</span>
-                  </div>
-                  <motion.button whileHover={{ x: 4 }}
-                    style={{ background: 'none', border: 'none', color: '#8b5cf6', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                    Details
-                  </motion.button>
-                </div>
+                  </motion.div>
+                )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 32 }}>
-        {services.map((_, index) => (
-          <button key={index} onClick={() => navigate(index)}
-            className={`dot ${activeIndex === index ? 'active' : ''}`} />
-        ))}
-      </div>
-    </section>
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -231,7 +149,7 @@ function UpcomingAppointments({ onCancel, onBook }: { onCancel: (id: number) => 
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
-  const { services, appointments, categories, cancelAppointment } = useSalon();
+  const { services, appointments, categories, cancelAppointment, emailLog } = useSalon();
   const [filter, setFilter] = useState('All');
   const [showBooking, setShowBooking] = useState(false);
 
@@ -239,8 +157,8 @@ export default function CustomerDashboard() {
     s.customerId === 'customer@example.com' && (filter === 'All' || s.category === filter)
   );
 
-  const totalSpent = filteredServices.reduce((sum, s) => sum + s.cost, 0);
   const customerAppointments = appointments.filter(a => a.customerId === 'customer@example.com');
+  const myEmails = emailLog.filter(e => e.to === 'customer@example.com');
 
   const handleCancel = (id: number) => {
     if (window.confirm('Cancel this appointment?')) {
@@ -274,10 +192,10 @@ export default function CustomerDashboard() {
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}>
-          <StatsCard title="Total Services" value={filteredServices.length} icon={Scissors} color="#8b5cf6" trend={12} />
-          <StatsCard title="Total Spent" value={`$${totalSpent}`} icon={DollarSign} color="#22c55e" />
-          <StatsCard title="Upcoming" value={customerAppointments.filter(a => a.status === 'confirmed').length} icon={Calendar} color="#ec4899" />
+          <StatsCard title="Total Services" value={filteredServices.length} icon={Scissors} color="#8b5cf6" subtitle="Lifetime visits" />
+          <StatsCard title="Upcoming" value={customerAppointments.filter(a => a.status === 'confirmed').length} icon={Calendar} color="#ec4899" subtitle="Confirmed appointments" />
           <StatsCard title="Loyalty Tier" value="Gold" icon={Sparkles} color="#f59e0b" subtitle="2 more visits to Platinum" />
+          <StatsCard title="Notifications" value={myEmails.length} icon={Bell} color="#22c55e" subtitle="Email updates sent" />
         </div>
 
         {/* Main Content */}
@@ -345,7 +263,7 @@ export default function CustomerDashboard() {
                 </div>
               </div>
 
-              <ServiceHistoryCard services={filteredServices} />
+              <ServiceHistoryTimeline services={filteredServices} />
             </div>
           </div>
         </div>

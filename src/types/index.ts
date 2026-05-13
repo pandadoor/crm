@@ -20,6 +20,16 @@ export interface StaffMember {
   bio: string;
 }
 
+export interface EmailNotification {
+  id: number;
+  to: string;
+  subject: string;
+  body: string;
+  sentAt: string;
+  type: 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'service_recorded' | 'reminder';
+  appointmentId?: number;
+}
+
 export interface Customer {
   id: number;
   name: string;
@@ -28,7 +38,6 @@ export interface Customer {
   status: 'Active' | 'Inactive' | 'At Risk';
   joinDate: string;
   totalVisits: number;
-  lifetimeValue: number;
 }
 
 export interface ServiceMenuItem {
@@ -70,4 +79,6 @@ export interface SalonContextType {
   login: (email: string) => void;
   logout: () => void;
   registerCustomer: (name: string, email: string, phone: string) => boolean;
+  emailLog: EmailNotification[];
+  sendEmailNotification: (type: EmailNotification['type'], to: string, appointmentId?: number) => void;
 }

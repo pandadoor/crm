@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import StatsCard from '../components/StatsCard';
-import { Users, Scissors, DollarSign, TrendingUp, Calendar, Bell, Plus, History, LogOut, Search, Star, Clock, User, Check, X, Sparkles, UserPlus, Mail, Phone } from 'lucide-react';
+import { Users, Scissors, Calendar, Bell, Plus, LogOut, Search, Star, User, Check, X, Sparkles, UserPlus } from 'lucide-react';
 import type { Customer, ServiceHistoryItem } from '../types';
 
 interface RecordServiceViewProps {
@@ -17,7 +17,6 @@ function RecordServiceView({ categories, recordService, setView }: RecordService
     customerId: 'customer@example.com',
     serviceType: '',
     stylist: '',
-    cost: '',
     duration: '',
     category: 'Hair',
     date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -28,11 +27,11 @@ function RecordServiceView({ categories, recordService, setView }: RecordService
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    recordService({ ...formData, cost: parseFloat(formData.cost), customerId: customerEmail } as unknown as Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string });
+    recordService({ ...formData, cost: 0, customerId: customerEmail } as unknown as Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string });
     setShowSuccess(true);
     setFormData({
       customerId: customerEmail,
-      serviceType: '', stylist: '', cost: '', duration: '', category: 'Hair',
+      serviceType: '', stylist: '', duration: '', category: 'Hair',
       date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     });
     setTimeout(() => setShowSuccess(false), 3000);
@@ -87,15 +86,15 @@ function RecordServiceView({ categories, recordService, setView }: RecordService
               </select>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Cost (USD)</label>
-              <input type="number" placeholder="85.00" required
-                value={formData.cost} onChange={e => setFormData({ ...formData, cost: e.target.value })}
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Duration</label>
+              <input type="text" placeholder="45 min" required
+                value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })}
                 style={{ fontSize: 13 }} />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Duration</label>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: 'var(--text-secondary)' }}>Category</label>
               <input type="text" placeholder="45 min" required
                 value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })}
                 style={{ fontSize: 13 }} />
@@ -192,19 +191,13 @@ function CreateCustomerModal({ onClose }: { onClose: () => void }) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { services, appointments, staff, customers, categories, recordService, completeAppointment } = useSalon();
+  const { services, appointments, staff, customers, categories, recordService, completeAppointment, emailLog } = useSalon();
   const [view, setView] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const totalRevenue = services.reduce((s, sv) => s + sv.cost, 0);
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
   const pendingAppointments = appointments.filter(a => a.status === 'confirmed').length;
-  const monthlyRevenue = services.filter(s => {
-    const d = new Date(s.date);
-    const now = new Date();
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  }).reduce((s, sv) => s + sv.cost, 0);
 
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -222,15 +215,6 @@ export default function AdminDashboard() {
             <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Centralized intelligence for your salon operations.</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--text-secondary)', cursor: 'pointer', position: 'relative',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Bell size={18} />
-              <span style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
-            </button>
             <button onClick={() => navigate('/login')}
               style={{
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -245,7 +229,7 @@ export default function AdminDashboard() {
         {/* Navigation Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
           {([
-            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'overview', label: 'Overview', icon: Bell },
             { id: 'customers', label: 'Customers', icon: Users },
             { id: 'appointments', label: 'Appointments', icon: Calendar },
             { id: 'services', label: 'Services', icon: Scissors },
@@ -268,63 +252,33 @@ export default function AdminDashboard() {
         {view === 'overview' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-              <StatsCard title="Active Customers" value={activeCustomers} icon={Users} color="#8b5cf6" trend={8} />
-              <StatsCard title="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} color="#22c55e" trend={12} />
-              <StatsCard title="Pending Appointments" value={pendingAppointments} icon={Calendar} color="#ec4899" />
-              <StatsCard title="Services Performed" value={services.length} icon={Scissors} color="#f59e0b" subtitle="This month" />
+              <StatsCard title="Active Customers" value={activeCustomers} icon={Users} color="#8b5cf6" subtitle="Currently active" />
+              <StatsCard title="Pending Appointments" value={pendingAppointments} icon={Calendar} color="#ec4899" subtitle="Awaiting service" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
-              {/* Revenue Chart */}
-              <div className="glass" style={{ padding: 28 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Monthly Revenue</h3>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 160 }}>
-                  {[4200, 5800, 6300, 5100, 7200, 8900, 9400, 8200, 10500, 11800, 13200, monthlyRevenue].map((val, i) => {
-                    const max = Math.max(4200, 5800, 6300, 5100, 7200, 8900, 9400, 8200, 10500, 11800, 13200, monthlyRevenue);
-                    const height = (val / max) * 140;
-                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    return (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        <div style={{
-                          width: '100%', height, borderRadius: '6px 6px 0 0',
-                          background: i === 11 ? 'linear-gradient(180deg, #8b5cf6, #d946ef)' : 'rgba(139,92,246,0.2)',
-                          transition: 'height 0.5s', minHeight: 4
-                        }} />
-                        <span style={{ fontSize: 9, color: 'var(--text-secondary)' }}>{months[i]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="glass" style={{ padding: 28 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Recent Activity</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {appointments.slice(0, 5).map(apt => (
-                    <div key={apt.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : apt.status === 'cancelled' ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        {apt.status === 'confirmed' ? <Calendar size={14} color="#22c55e" /> :
-                         apt.status === 'cancelled' ? <X size={14} color="#ef4444" /> : <Check size={14} color="#8b5cf6" />}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>{apt.service}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{apt.date} &middot; {apt.time}</div>
-                      </div>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
-                        background: apt.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                        color: apt.status === 'confirmed' ? '#22c55e' : '#ef4444'
-                      }}>
-                        {apt.status}
-                      </span>
+            {/* Recent Activity */}
+            <div className="glass" style={{ padding: 28, marginBottom: 24 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Recent Activity</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {emailLog.slice(0, 6).map(entry => (
+                  <div key={entry.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: entry.type === 'booking_confirmed' ? 'rgba(34,197,94,0.1)' : entry.type === 'booking_cancelled' ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      {entry.type === 'booking_confirmed' ? <Check size={14} color="#22c55e" /> :
+                       entry.type === 'booking_cancelled' ? <X size={14} color="#ef4444" /> : <Bell size={14} color="#8b5cf6" />}
                     </div>
-                  ))}
-                </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{entry.subject}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>To: {entry.to} &middot; {new Date(entry.sentAt).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+                {emailLog.length === 0 && (
+                  <p style={{ color: 'var(--text-secondary)', textAlign: 'center', fontSize: 13 }}>No email notifications sent yet.</p>
+                )}
               </div>
             </div>
 
@@ -378,7 +332,7 @@ export default function AdminDashboard() {
                       <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Customer</th>
                       <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Status</th>
                       <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Visits</th>
-                      <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Lifetime Value</th>
+
                       <th style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Most Frequent</th>
                       <th style={{ padding: '12px' }}></th>
                     </tr>
@@ -420,7 +374,7 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td style={{ padding: '14px 12px', fontSize: 14 }}>{customerServiceCount}</td>
-                          <td style={{ padding: '14px 12px', fontSize: 14, color: '#22c55e', fontWeight: 600 }}>${c.lifetimeValue}</td>
+
                           <td style={{ padding: '14px 12px', fontSize: 13 }}>{mostFreq}</td>
                           <td style={{ padding: '14px 12px' }}>
                             <button style={{

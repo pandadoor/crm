@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { StaffMember, Customer, ServiceMenuItem, Appointment, ServiceHistoryItem, SalonContextType } from '../types';
+import type { StaffMember, Customer, ServiceMenuItem, Appointment, ServiceHistoryItem, SalonContextType, EmailNotification } from '../types';
 
 const SalonContext = createContext<SalonContextType | null>(null);
 
@@ -18,12 +18,12 @@ const STAFF: StaffMember[] = [
 ];
 
 const CUSTOMERS: Customer[] = [
-  { id: 1, name: 'Alex Johnson', email: 'customer@example.com', phone: '+1 (555) 123-4567', status: 'Active', joinDate: 'Jan 2023', totalVisits: 24, lifetimeValue: 5840 },
-  { id: 2, name: 'Maria Garcia', email: 'maria@example.com', phone: '+1 (555) 234-5678', status: 'Active', joinDate: 'Mar 2023', totalVisits: 18, lifetimeValue: 4200 },
-  { id: 3, name: 'James Smith', email: 'james@example.com', phone: '+1 (555) 345-6789', status: 'Active', joinDate: 'Jun 2023', totalVisits: 12, lifetimeValue: 2100 },
-  { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', phone: '+1 (555) 456-7890', status: 'Inactive', joinDate: 'Feb 2023', totalVisits: 6, lifetimeValue: 980 },
-  { id: 5, name: 'David Kim', email: 'david@example.com', phone: '+1 (555) 567-8901', status: 'Active', joinDate: 'Sep 2023', totalVisits: 9, lifetimeValue: 1750 },
-  { id: 6, name: 'Emily Davis', email: 'emily@example.com', phone: '+1 (555) 678-9012', status: 'At Risk', joinDate: 'Apr 2023', totalVisits: 4, lifetimeValue: 620 },
+  { id: 1, name: 'Alex Johnson', email: 'customer@example.com', phone: '+1 (555) 123-4567', status: 'Active', joinDate: 'Jan 2023', totalVisits: 24 },
+  { id: 2, name: 'Maria Garcia', email: 'maria@example.com', phone: '+1 (555) 234-5678', status: 'Active', joinDate: 'Mar 2023', totalVisits: 18 },
+  { id: 3, name: 'James Smith', email: 'james@example.com', phone: '+1 (555) 345-6789', status: 'Active', joinDate: 'Jun 2023', totalVisits: 12 },
+  { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', phone: '+1 (555) 456-7890', status: 'Inactive', joinDate: 'Feb 2023', totalVisits: 6 },
+  { id: 5, name: 'David Kim', email: 'david@example.com', phone: '+1 (555) 567-8901', status: 'Active', joinDate: 'Sep 2023', totalVisits: 9 },
+  { id: 6, name: 'Emily Davis', email: 'emily@example.com', phone: '+1 (555) 678-9012', status: 'At Risk', joinDate: 'Apr 2023', totalVisits: 4 },
 ];
 
 const ALL_SERVICES: ServiceHistoryItem[] = [
@@ -89,6 +89,11 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     return saved ? JSON.parse(saved) : CUSTOMERS;
   });
 
+  const [emailLog, setEmailLog] = useState<EmailNotification[]>(() => {
+    const saved = localStorage.getItem('salon_email_log');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('salon_services', JSON.stringify(services));
   }, [services]);
@@ -101,6 +106,10 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     localStorage.setItem('salon_customers', JSON.stringify(customers));
   }, [customers]);
 
+  useEffect(() => {
+    localStorage.setItem('salon_email_log', JSON.stringify(emailLog));
+  }, [emailLog]);
+
   const recordService = (newService: Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string }) => {
     setServices(prev => [{
       ...newService,
@@ -109,20 +118,50 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     } as ServiceHistoryItem, ...prev]);
   };
 
+  const sendEmailNotification = (type: EmailNotification['type'], to: string, appointmentId?: number) => {
+    const subjectMap: Record<string, string> = {
+      booking_confirmed: 'Your Appointment is Confirmed',
+      booking_cancelled: 'Appointment Cancelled',
+      booking_completed: 'Appointment Completed - Thank You!',
+      service_recorded: 'New Service Added to Your History',
+      reminder: 'Reminder: Upcoming Appointment Tomorrow',
+    };
+    const bodyMap: Record<string, string> = {
+      booking_confirmed: 'Your appointment has been confirmed. We look forward to seeing you at the salon!',
+      booking_cancelled: 'Your appointment has been cancelled as requested. If you need to reschedule, please book again.',
+      booking_completed: 'Thank you for visiting! Your appointment has been completed. We hope to see you again soon.',
+      service_recorded: 'A new service has been added to your history. You can view it in your dashboard.',
+      reminder: 'This is a friendly reminder of your upcoming appointment tomorrow. See you soon!',
+    };
+    setEmailLog(prev => [{
+      id: Date.now(),
+      to,
+      subject: subjectMap[type],
+      body: bodyMap[type],
+      sentAt: new Date().toISOString(),
+      type,
+      appointmentId,
+    }, ...prev]);
+  };
+
   const bookAppointment = (appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => {
+    const id = Date.now();
     setAppointments(prev => [{
       ...appointment,
-      id: Date.now(),
+      id,
       status: 'confirmed',
       createdAt: new Date().toISOString()
     } as Appointment, ...prev]);
+    sendEmailNotification('booking_confirmed', appointment.customerId, id);
     return true;
   };
 
   const cancelAppointment = (id: number) => {
+    const apt = appointments.find(a => a.id === id);
     setAppointments(prev => prev.map(a =>
       a.id === id ? { ...a, status: 'cancelled' as const } : a
     ));
+    if (apt) sendEmailNotification('booking_cancelled', apt.customerId, id);
   };
 
   const completeAppointment = (id: number) => {
@@ -138,6 +177,7 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
         category: apt.category,
         date: apt.date
       });
+      sendEmailNotification('booking_completed', apt.customerId, id);
     }
     setAppointments(prev => prev.map(a =>
       a.id === id ? { ...a, status: 'completed' as const } : a
@@ -162,7 +202,6 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
       status: 'Active',
       joinDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       totalVisits: 0,
-      lifetimeValue: 0,
     };
     setCustomers(prev => [...prev, newCustomer]);
     setCurrentUser(email);
@@ -175,7 +214,8 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
       appointments, bookAppointment, cancelAppointment, completeAppointment,
       staff: STAFF, customers,
       serviceMenu: SERVICE_MENU, timeSlots: TIME_SLOTS,
-      currentUser, login, logout, registerCustomer
+      currentUser, login, logout, registerCustomer,
+      emailLog, sendEmailNotification
     }}>
       {children}
     </SalonContext.Provider>

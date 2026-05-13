@@ -1,13 +1,15 @@
 # Salon CRM
 
-A premium salon CRM with customer booking, admin dashboard, analytics, and staff management -- built with React 19, TypeScript, Tailwind CSS v4, and Vite.
+A salon CRM focused on scheduling, automated email notifications, and service history tracking -- built with React 19, TypeScript, Tailwind CSS v4, and Vite.
 
 ## Features
 
-- **Landing Page** -- Hero stats, services grid with category filter, testimonials, staff directory
-- **Customer Dashboard** -- Stats cards, service history carousel with drag/swipe, upcoming appointments, booking modal (4-step flow)
-- **Admin Dashboard** -- Revenue chart, customer database with search, appointment queue with complete/cancel, service recording, staff directory
-- **Authentication** -- Role selector (Customer/Admin), demo credentials hint
+- **Landing Page** -- Services grid with category filter, staff directory, testimonials
+- **Customer Dashboard** -- Service history timeline, upcoming appointments, booking wizard, email notification log
+- **Admin Dashboard** -- Appointment queue with complete/cancel, customer database, service recording, staff directory, email notification feed
+- **Authentication** -- Role selector (Customer/Admin), self-registration, demo credentials
+- **Automated Email Reachout** -- Email notifications sent on booking, cancellation, completion, and reminders
+- **Service History** -- Timeline-style history view with category filters, expandable details
 - **Account Creation** -- Self-registration from website or admin-panel creation
 - **Responsive** -- Full mobile support with glassmorphism UI
 
@@ -48,7 +50,7 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates how browser requests, page processes, databases, account creation, and display outputs interact within the Salon CRM. Customer accounts can be created from two entry points: website self-registration and admin panel.
+The system flowchart illustrates how browser requests, page processes, databases, email notifications, account creation, and display outputs interact within the Salon CRM. Customer accounts can be created from two entry points: website self-registration and admin panel.
 
 ```mermaid
 graph TD
@@ -73,11 +75,17 @@ graph TD
     CUSTOMER_DASH --> CUSTOMER_TOOLS[Run Customer<br/>Operations]
     ADMIN_TOOLS --> ADMIN_VIEW[/Admin Dashboard<br/>Displayed on Screen/]
     CUSTOMER_TOOLS --> CUSTOMER_VIEW[/Customer Dashboard<br/>Displayed on Screen/]
-    ADMIN_VIEW --> MANAGE_ADM[Admin Manages<br/>Revenue / Customers /<br/>Appointments / Services]
-    CUSTOMER_VIEW --> MANAGE_CUST[Customer Browses<br/>Stats / History /<br/>Bookings / Profile]
-    MANAGE_ADM --> STORE_ADM[(Persistent Data<br/>Database)]
-    MANAGE_CUST --> STORE_CUST[(User Records<br/>Database)]
-    STORE_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
+    ADMIN_VIEW --> MANAGE_ADM[Admin Manages<br/>Appointments / Customers /<br/>Services / Staff]
+    CUSTOMER_VIEW --> MANAGE_CUST[Customer Browses<br/>History / Bookings /<br/>Profile]
+    MANAGE_ADM --> EMAIL_ADM{{Send Email<br/>Notification}}
+    MANAGE_CUST --> EMAIL_CUST{{Send Email<br/>Notification}}
+    EMAIL_ADM --> LOG_ADM[(Email Log<br/>Database)]
+    EMAIL_CUST --> LOG_CUST[(Email Log<br/>Database)]
+    EMAIL_ADM --> STORE_ADM[(Persistent Data<br/>Database)]
+    EMAIL_CUST --> STORE_CUST[(User Records<br/>Database)]
+    LOG_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
+    LOG_CUST --> SEED_IN
+    STORE_ADM --> SEED_IN
     STORE_CUST --> SEED_IN
 
     LOGIN --> NEW_USER{New user?}
@@ -95,7 +103,7 @@ graph TD
     ADMIN_SAVE --> REG_STORE
     ADMIN_SAVE --> ADMIN_DASH
 
-    SEED_IN --> RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
+    RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
     RETRIEVE --> MERGE[Aggregate Admin and Customer Data]
     MERGE --> FINAL[/Final Page Output<br/>Displayed to User/]
     FINAL --> SYS_END([End])
