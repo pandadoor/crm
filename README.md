@@ -50,48 +50,52 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates the hierarchical module structure of the Salon CRM — showing how features are organized into system modules, sub-modules, and data storage components.
+The system flowchart illustrates the end-to-end request flow within the Salon CRM — from browser request through routing, authentication, role-based UI rendering, database operations, and page output.
 
 ```mermaid
 graph TD
-    CRM["Salon CRM System"] --> UI["User Interface Module"]
-    CRM --> AUTH["Authentication Module"]
-    CRM --> CUSTOMER["Customer Module"]
-    CRM --> ADMIN["Admin Module"]
-    CRM --> EMAIL["Email Notification System"]
-    CRM --> DATA["Data Storage Layer"]
+    A([🌐 Browser Request]) --> B[Resolve URL Route]
+    B --> C{Route Found?}
+    C -->|No| D[Redirect to Home]
+    D --> A
+    C -->|Yes| E[Load Page Components]
+    E --> F{Auth Required?}
+    F -->|No| G[/Landing Page<br/>to User/]
+    G --> Z([End])
+    F -->|Yes| H[/Login Form<br/>Displayed/]
+    H --> I{Email &<br/>Password Provided?}
+    I -->|No| H
+    I -->|Yes| J[Authenticate<br/>User Credentials]
+    J --> K{Is Admin?}
+    K -->|Yes| L[Admin Dashboard]
+    K -->|No| M[Customer Dashboard]
 
-    UI --> LP["Landing Page"]
-    UI --> LG["Login Page"]
-    UI --> REG["Registration Page"]
-    UI --> DASH["Dashboard"]
+    L --> N[Load Admin Operations]
+    N --> O{Manage<br/>Options}
+    O -->|Revenue| O1[Revenue Metrics]
+    O -->|Customers| O2[Customer Directory]
+    O -->|Appointments| O3[Appointment Queue]
+    O -->|Services| O4[Service Records]
+    O1 --> O5[(Admin Database<br/>Write/Read)]
+    O2 --> O5
+    O3 --> O5
+    O4 --> O5
 
-    AUTH --> AL["Login Processing"]
-    AUTH --> AR["Registration Processing"]
-    AUTH --> AUTH_DB[(User Accounts<br/>Database)]
+    M --> P[Load Customer Operations]
+    P --> Q{Manage<br/>Options}
+    Q -->|Stats| Q1[Stats Cards]
+    Q -->|History| Q2[Service History]
+    Q -->|Bookings| Q3[Book Appointments<br/>4-Step Wizard]
+    Q -->|Profile| Q4[User Profile]
+    Q1 --> Q5[(User Database<br/>Write/Read)]
+    Q2 --> Q5
+    Q3 --> Q5
+    Q4 --> Q5
 
-    CUSTOMER --> BW["Booking Wizard"]
-    CUSTOMER --> SH["Service History"]
-    CUSTOMER --> PM["Profile Management"]
-    BW --> BS["Select Service"]
-    BW --> BST["Choose Stylist"]
-    BW --> BDT["Pick Date / Time"]
-    BW --> BC["Confirm Booking"]
-
-    ADMIN --> AQ["Appointment Queue"]
-    ADMIN --> CM["Customer Management"]
-    ADMIN --> SR["Service Recording"]
-    ADMIN --> SD["Staff Directory"]
-    ADMIN --> CCA["Create Customer Account"]
-
-    EMAIL --> ECR["Booking Confirmation"]
-    EMAIL --> ECN["Cancellation Notice"]
-    EMAIL --> ECP["Completion Notice"]
-
-    DATA --> DB_A[(Appointments<br/>Database)]
-    DATA --> DB_C[(Customers<br/>Database)]
-    DATA --> DB_S[(Service History<br/>Database)]
-    DATA --> DB_E[(Email Log<br/>Database)]
+    O5 --> R[/Admin Dashboard<br/>Rendered/]
+    Q5 --> S[/Customer Dashboard<br/>Rendered/]
+    R --> T([Session End])
+    S --> T
 ```
 
 ## Process Flowchart
