@@ -111,26 +111,28 @@ graph TD
 
 ## Process Flowchart
 
-The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- assuming the customer already has an account, from sign-in through role-based operations.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from browsing services through registration, booking, and history review.
 
 ```mermaid
 graph TD
     P_START([Start]) --> BROWSE[Browse Landing Page<br/>View Services and Staff]
-    BROWSE --> BOOK{Book Now?}
-    BOOK -->|No| BROWSE
-    BOOK -->|Yes| LOGIN[Open Login Page]
-    LOGIN --> ROLE[Select User Role<br/>Customer or Admin]
-    ROLE --> EMAIL[Type Email Address]
-    EMAIL --> CHECK{Email Provided?}
-    CHECK -->|No| EMAIL
-    CHECK -->|Yes| AUTH[Log User into System]
-    AUTH --> IS_ADMIN{Is User<br/>Admin?}
-    IS_ADMIN -->|Yes| ADMIN_DASH[Display Admin Dashboard]
-    IS_ADMIN -->|No| CUST_DASH[Display Customer Dashboard]
-    ADMIN_DASH --> ADMIN_OPS[Manage Revenue, Customers,<br/>Appointments, and Services]
-    CUST_DASH --> CUST_OPS[Browse History,<br/>Book Appointment, View Profile]
-    ADMIN_OPS --> CONT{Continue?}
-    CUST_OPS --> CONT
+    BROWSE --> REGISTER[Register / Create Account]
+    REGISTER --> EXISTS{Account<br/>Exists?}
+    EXISTS -->|No| CREATE_ACCT[Fill Registration Form<br/>Name / Email / Phone]
+    CREATE_ACCT --> SAVE_ACCT[Save Customer Record]
+    SAVE_ACCT --> LOGIN[Log into System]
+    EXISTS -->|Yes| LOGIN
+    LOGIN --> BOOK[Start Booking Process]
+    BOOK --> PICK_SVC[Select Service Type]
+    PICK_SVC --> PICK_STYL[Choose Stylist]
+    PICK_STYL --> PICK_DATE[Pick Date and Time]
+    PICK_DATE --> CONFIRM[Review and Confirm<br/>Booking Details]
+    CONFIRM --> SAVED{Booking<br/>Saved?}
+    SAVED -->|No| CONFIRM
+    SAVED -->|Yes| SEND_EMAIL[Send Confirmation<br/>Email Notification]
+    SEND_EMAIL --> HISTORY[Browse Service History]
+    HISTORY --> VIEW_HIST[View Past Appointments<br/>and Service Records]
+    VIEW_HIST --> CONT{Continue?}
     CONT -->|Yes| BROWSE
     CONT -->|No| P_END([End])
 ```
