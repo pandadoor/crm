@@ -50,100 +50,48 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates the overall architecture of the Salon CRM — showing how users, processes, system modules, databases, and outputs interact to deliver scheduling, email notifications, and service history tracking. The system supports two account creation paths: website self-registration and admin-panel creation.
+The system flowchart illustrates the hierarchical module structure of the Salon CRM — showing how features are organized into system modules, sub-modules, and data storage components.
 
 ```mermaid
 graph TD
-    %% ── USER MODULE ──
-    subgraph USER_INTERFACE["User Interface"]
-        UI_START([Start])
-        UI_BROWSE[Browse Landing Page]
-        UI_LOGIN[/Display Login Form/]
-        UI_REG[/Display Registration Form/]
-        UI_DASH[/Display Dashboard/]
-    end
+    CRM["Salon CRM System"] --> UI["User Interface Module"]
+    CRM --> AUTH["Authentication Module"]
+    CRM --> CUSTOMER["Customer Module"]
+    CRM --> ADMIN["Admin Module"]
+    CRM --> EMAIL["Email Notification System"]
+    CRM --> DATA["Data Storage Layer"]
 
-    subgraph AUTH["Authentication"]
-        AUTH_LOGIN[Process Login Credentials]
-        AUTH_REG[Register New User]
-        AUTH_CHECK{Valid Credentials?}
-        AUTH_ROLE{Admin or<br/>Customer?}
-        AUTH_STORE[(User Accounts<br/>Database)]
-    end
+    UI --> LP["Landing Page"]
+    UI --> LG["Login Page"]
+    UI --> REG["Registration Page"]
+    UI --> DASH["Dashboard"]
 
-    subgraph CUSTOMER_MODULE["Customer Module"]
-        CUST_BOOK[Booking Wizard]
-        CUST_SVC[Select Service]
-        CUST_STYL[Choose Stylist]
-        CUST_DATE[Pick Date / Time]
-        CUST_CONFIRM[Confirm Booking]
-        CUST_HIST[View Service History]
-        CUST_PROFILE[Manage Profile]
-    end
+    AUTH --> AL["Login Processing"]
+    AUTH --> AR["Registration Processing"]
+    AUTH --> AUTH_DB[(User Accounts<br/>Database)]
 
-    subgraph ADMIN_MODULE["Admin Module"]
-        ADM_QUEUE[Manage Appointment Queue]
-        ADM_CUSTOMERS[Manage Customer Database]
-        ADM_SERVICES[Record Services]
-        ADM_STAFF[Manage Staff Directory]
-        ADM_CREATE[Create Customer Account]
-    end
+    CUSTOMER --> BW["Booking Wizard"]
+    CUSTOMER --> SH["Service History"]
+    CUSTOMER --> PM["Profile Management"]
+    BW --> BS["Select Service"]
+    BW --> BST["Choose Stylist"]
+    BW --> BDT["Pick Date / Time"]
+    BW --> BC["Confirm Booking"]
 
-    subgraph EMAIL["Email Notification System"]
-        EMAIL_CONFIRM[[Send Booking Confirmation]]
-        EMAIL_CANCEL[[Send Cancellation Notice]]
-        EMAIL_COMPLETE[[Send Completion Notice]]
-    end
+    ADMIN --> AQ["Appointment Queue"]
+    ADMIN --> CM["Customer Management"]
+    ADMIN --> SR["Service Recording"]
+    ADMIN --> SD["Staff Directory"]
+    ADMIN --> CCA["Create Customer Account"]
 
-    subgraph DATA["Data Storage"]
-        DB_APPTS[(Appointments<br/>Database)]
-        DB_CUSTOMERS[(Customers<br/>Database)]
-        DB_SERVICES[(Service History<br/>Database)]
-        DB_EMAIL[(Email Log<br/>Database)]
-    end
+    EMAIL --> ECR["Booking Confirmation"]
+    EMAIL --> ECN["Cancellation Notice"]
+    EMAIL --> ECP["Completion Notice"]
 
-    %% ── MAIN SYSTEM FLOW ──
-    UI_START --> UI_BROWSE
-    UI_BROWSE --> UI_LOGIN
-    UI_LOGIN --> AUTH_LOGIN
-    AUTH_LOGIN --> AUTH_CHECK
-    AUTH_CHECK -->|No| UI_REG
-    AUTH_CHECK -->|Yes| AUTH_ROLE
-    UI_REG --> AUTH_REG
-    AUTH_REG --> AUTH_STORE
-    AUTH_REG --> UI_DASH
-    AUTH_STORE --> AUTH_REG
-
-    %% ── CUSTOMER PATH ──
-    AUTH_ROLE -->|Customer| CUST_BOOK
-    CUST_BOOK --> CUST_SVC
-    CUST_SVC --> CUST_STYL
-    CUST_STYL --> CUST_DATE
-    CUST_DATE --> CUST_CONFIRM
-    CUST_CONFIRM --> DB_APPTS
-    CUST_CONFIRM --> EMAIL_CONFIRM
-    EMAIL_CONFIRM --> DB_EMAIL
-    DB_APPTS --> CUST_HIST
-    CUST_HIST --> DB_SERVICES
-    CUST_HIST --> CUST_PROFILE
-
-    %% ── ADMIN PATH ──
-    AUTH_ROLE -->|Admin| ADM_QUEUE
-    ADM_QUEUE --> DB_APPTS
-    ADM_QUEUE --> ADM_CUSTOMERS
-    ADM_CUSTOMERS --> DB_CUSTOMERS
-    ADM_CUSTOMERS --> ADM_SERVICES
-    ADM_SERVICES --> DB_SERVICES
-    ADM_SERVICES --> EMAIL_COMPLETE
-    EMAIL_COMPLETE --> DB_EMAIL
-    ADM_CUSTOMERS --> ADM_STAFF
-    ADM_CUSTOMERS --> ADM_CREATE
-    ADM_CREATE --> DB_CUSTOMERS
-
-    %% ── FEEDBACK LOOPS ──
-    DB_SERVICES --> CUST_HIST
-    DB_APPTS --> ADM_QUEUE
-    DB_CUSTOMERS --> ADM_CUSTOMERS
+    DATA --> DB_A[(Appointments<br/>Database)]
+    DATA --> DB_C[(Customers<br/>Database)]
+    DATA --> DB_S[(Service History<br/>Database)]
+    DATA --> DB_E[(Email Log<br/>Database)]
 ```
 
 ## Process Flowchart
