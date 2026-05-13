@@ -103,7 +103,7 @@ graph TD
 
 ## Process Flowchart
 
-The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- from arrival through account registration or sign-in, and into role-based operations, with only essential decision branches.
+The process flowchart documents the step-by-step sequence of user tasks within the Salon CRM -- assuming the customer already has an account, from sign-in through role-based operations.
 
 ```mermaid
 graph TD
@@ -111,17 +111,7 @@ graph TD
     BROWSE --> BOOK{Book Now?}
     BOOK -->|No| BROWSE
     BOOK -->|Yes| LOGIN[Open Login Page]
-    LOGIN --> HAS_ACCT{Have an<br/>account?}
-    HAS_ACCT -->|No| REG_FORM[Display<br/>Registration Form]
-    REG_FORM --> FILL_REG[Enter Name,<br/>Email, and Phone]
-    FILL_REG --> SUBMIT_REG[Submit<br/>Registration]
-    SUBMIT_REG --> REG_CHECK{Email already<br/>exists?}
-    REG_CHECK -->|Yes| REG_FORM
-    REG_CHECK -->|No| CREATE_ACCT[Create Account<br/>and Log In]
-    CREATE_ACCT --> CUST_DASH[Display Customer Dashboard]
-
-    HAS_ACCT -->|Yes| SIGN_IN[Sign-in Form]
-    SIGN_IN --> ROLE[Select User Role<br/>Customer or Admin]
+    LOGIN --> ROLE[Select User Role<br/>Customer or Admin]
     ROLE --> EMAIL[Type Email Address]
     EMAIL --> CHECK{Email Provided?}
     CHECK -->|No| EMAIL
@@ -129,7 +119,6 @@ graph TD
     AUTH --> IS_ADMIN{Is User<br/>Admin?}
     IS_ADMIN -->|Yes| ADMIN_DASH[Display Admin Dashboard]
     IS_ADMIN -->|No| CUST_DASH[Display Customer Dashboard]
-
     ADMIN_DASH --> ADMIN_OPS[Manage Revenue, Customers,<br/>Appointments, and Services]
     CUST_DASH --> CUST_OPS[Browse History,<br/>Book Appointment, View Profile]
     ADMIN_OPS --> CONT{Continue?}
