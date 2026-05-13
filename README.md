@@ -50,63 +50,100 @@ Open http://localhost:5173 in your browser.
 
 ## System Flowchart
 
-The system flowchart illustrates how browser requests, page processes, databases, email notifications, account creation, and display outputs interact within the Salon CRM. Customer accounts can be created from two entry points: website self-registration and admin panel.
+The system flowchart illustrates the overall architecture of the Salon CRM — showing how users, processes, system modules, databases, and outputs interact to deliver scheduling, email notifications, and service history tracking. The system supports two account creation paths: website self-registration and admin-panel creation.
 
 ```mermaid
 graph TD
-    SYS_START([Start]) --> REQ_IN[/Browser Sends URL Request/]
-    REQ_IN --> RESOLVE[Resolve URL to Matching Route]
-    RESOLVE --> FOUND{Route match<br/>found?}
-    FOUND -->|Yes| LOAD[Load Page Components]
-    FOUND -->|No| HOME_REDIR[Redirect to Home Page]
-    HOME_REDIR --> RESOLVE
-    LOAD --> CHECK_AUTH{Page requires<br/>login?}
-    CHECK_AUTH -->|No| PUBLIC[/Landing Page<br/>Displayed to User/]
-    CHECK_AUTH -->|Yes| LOGIN[/Login Form<br/>Displayed to User/]
-    LOGIN --> USER_TYPES[/User Types<br/>Email and Password\]
-    USER_TYPES --> INSPECT_LOGIN((Route<br/>Connector))
-    INSPECT_LOGIN --> FILLED{Email field<br/>filled?}
-    FILLED -->|No| USER_TYPES
-    FILLED -->|Yes| LOG_USER_IN[Log User Into<br/>the System]
-    LOG_USER_IN --> ADMIN_YES{Is user the<br/>salon admin?}
-    ADMIN_YES -->|Yes| ADMIN_DASH[[Admin Dashboard<br/>Subprocess]]
-    ADMIN_YES -->|No| CUSTOMER_DASH[[Customer Dashboard<br/>Subprocess]]
-    ADMIN_DASH --> ADMIN_TOOLS[Run Admin<br/>Operations]
-    CUSTOMER_DASH --> CUSTOMER_TOOLS[Run Customer<br/>Operations]
-    ADMIN_TOOLS --> ADMIN_VIEW[/Admin Dashboard<br/>Displayed on Screen/]
-    CUSTOMER_TOOLS --> CUSTOMER_VIEW[/Customer Dashboard<br/>Displayed on Screen/]
-    ADMIN_VIEW --> MANAGE_ADM[Admin Manages<br/>Appointments / Customers /<br/>Services / Staff]
-    CUSTOMER_VIEW --> MANAGE_CUST[Customer Browses<br/>History / Bookings /<br/>Profile]
-    MANAGE_ADM --> EMAIL_ADM{{Send Email<br/>Notification}}
-    MANAGE_CUST --> EMAIL_CUST{{Send Email<br/>Notification}}
-    EMAIL_ADM --> LOG_ADM[(Email Log<br/>Database)]
-    EMAIL_CUST --> LOG_CUST[(Email Log<br/>Database)]
-    EMAIL_ADM --> STORE_ADM[(Persistent Data<br/>Database)]
-    EMAIL_CUST --> STORE_CUST[(User Records<br/>Database)]
-    LOG_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
-    LOG_CUST --> SEED_IN
-    STORE_ADM --> SEED_IN
-    STORE_CUST --> SEED_IN
+    %% ── USER MODULE ──
+    subgraph USER_INTERFACE["User Interface"]
+        UI_START([Start])
+        UI_BROWSE[Browse Landing Page]
+        UI_LOGIN[/Display Login Form/]
+        UI_REG[/Display Registration Form/]
+        UI_DASH[/Display Dashboard/]
+    end
 
-    LOGIN --> NEW_USER{New user?}
-    NEW_USER -->|Yes| REG_FORM[/Registration Form<br/>Displayed to User/]
-    NEW_USER -->|No| USER_TYPES
-    REG_FORM --> REG_INPUT[/User Enters<br/>Name Email Phone\]
-    REG_INPUT --> REG_SAVE[Create Customer<br/>Account Record]
-    REG_SAVE --> REG_STORE[(Customer Database)]
-    REG_SAVE --> AUTO_LOGIN[Auto-Login and<br/>Redirect to Dashboard]
-    AUTO_LOGIN --> CUSTOMER_DASH
+    subgraph AUTH["Authentication"]
+        AUTH_LOGIN[Process Login Credentials]
+        AUTH_REG[Register New User]
+        AUTH_CHECK{Valid Credentials?}
+        AUTH_ROLE{Admin or<br/>Customer?}
+        AUTH_STORE[(User Accounts<br/>Database)]
+    end
 
-    ADMIN_DASH --> CREATE_CUST[Admin Opens<br/>Create Customer Form]
-    CREATE_CUST --> ADMIN_REG[/Admin Fills<br/>Name Email Phone\]
-    ADMIN_REG --> ADMIN_SAVE[Create Customer<br/>Account Record]
-    ADMIN_SAVE --> REG_STORE
-    ADMIN_SAVE --> ADMIN_DASH
+    subgraph CUSTOMER_MODULE["Customer Module"]
+        CUST_BOOK[Booking Wizard]
+        CUST_SVC[Select Service]
+        CUST_STYL[Choose Stylist]
+        CUST_DATE[Pick Date / Time]
+        CUST_CONFIRM[Confirm Booking]
+        CUST_HIST[View Service History]
+        CUST_PROFILE[Manage Profile]
+    end
 
-    RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
-    RETRIEVE --> MERGE[Aggregate Admin and Customer Data]
-    MERGE --> FINAL[/Final Page Output<br/>Displayed to User/]
-    FINAL --> SYS_END([End])
+    subgraph ADMIN_MODULE["Admin Module"]
+        ADM_QUEUE[Manage Appointment Queue]
+        ADM_CUSTOMERS[Manage Customer Database]
+        ADM_SERVICES[Record Services]
+        ADM_STAFF[Manage Staff Directory]
+        ADM_CREATE[Create Customer Account]
+    end
+
+    subgraph EMAIL["Email Notification System"]
+        EMAIL_CONFIRM[[Send Booking Confirmation]]
+        EMAIL_CANCEL[[Send Cancellation Notice]]
+        EMAIL_COMPLETE[[Send Completion Notice]]
+    end
+
+    subgraph DATA["Data Storage"]
+        DB_APPTS[(Appointments<br/>Database)]
+        DB_CUSTOMERS[(Customers<br/>Database)]
+        DB_SERVICES[(Service History<br/>Database)]
+        DB_EMAIL[(Email Log<br/>Database)]
+    end
+
+    %% ── MAIN SYSTEM FLOW ──
+    UI_START --> UI_BROWSE
+    UI_BROWSE --> UI_LOGIN
+    UI_LOGIN --> AUTH_LOGIN
+    AUTH_LOGIN --> AUTH_CHECK
+    AUTH_CHECK -->|No| UI_REG
+    AUTH_CHECK -->|Yes| AUTH_ROLE
+    UI_REG --> AUTH_REG
+    AUTH_REG --> AUTH_STORE
+    AUTH_REG --> UI_DASH
+    AUTH_STORE --> AUTH_REG
+
+    %% ── CUSTOMER PATH ──
+    AUTH_ROLE -->|Customer| CUST_BOOK
+    CUST_BOOK --> CUST_SVC
+    CUST_SVC --> CUST_STYL
+    CUST_STYL --> CUST_DATE
+    CUST_DATE --> CUST_CONFIRM
+    CUST_CONFIRM --> DB_APPTS
+    CUST_CONFIRM --> EMAIL_CONFIRM
+    EMAIL_CONFIRM --> DB_EMAIL
+    DB_APPTS --> CUST_HIST
+    CUST_HIST --> DB_SERVICES
+    CUST_HIST --> CUST_PROFILE
+
+    %% ── ADMIN PATH ──
+    AUTH_ROLE -->|Admin| ADM_QUEUE
+    ADM_QUEUE --> DB_APPTS
+    ADM_QUEUE --> ADM_CUSTOMERS
+    ADM_CUSTOMERS --> DB_CUSTOMERS
+    ADM_CUSTOMERS --> ADM_SERVICES
+    ADM_SERVICES --> DB_SERVICES
+    ADM_SERVICES --> EMAIL_COMPLETE
+    EMAIL_COMPLETE --> DB_EMAIL
+    ADM_CUSTOMERS --> ADM_STAFF
+    ADM_CUSTOMERS --> ADM_CREATE
+    ADM_CREATE --> DB_CUSTOMERS
+
+    %% ── FEEDBACK LOOPS ──
+    DB_SERVICES --> CUST_HIST
+    DB_APPTS --> ADM_QUEUE
+    DB_CUSTOMERS --> ADM_CUSTOMERS
 ```
 
 ## Process Flowchart
