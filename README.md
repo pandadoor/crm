@@ -60,7 +60,7 @@ graph TD
     LOAD --> CHECK_AUTH{Page requires<br/>login?}
     CHECK_AUTH -->|No| PUBLIC[/Landing Page<br/>Displayed to User/]
     CHECK_AUTH -->|Yes| LOGIN[/Login Form<br/>Displayed to User/]
-    LOGIN --> USER_TYPES>User Types<br/>Email and Password]
+    LOGIN --> USER_TYPES[/User Types<br/>Email and Password\]
     USER_TYPES --> INSPECT_LOGIN((Route<br/>Connector))
     INSPECT_LOGIN --> FILLED{Email field<br/>filled?}
     FILLED -->|No| USER_TYPES
@@ -79,7 +79,7 @@ graph TD
     STORE_ADM --> SEED_IN[(Preloaded Seed<br/>Data Database)]
     STORE_CUST --> SEED_IN
     SEED_IN --> RETRIEVE[Retrieve and Assemble<br/>Formatted Data]
-    RETRIEVE --> MERGE(("Merge Point"))
+    RETRIEVE --> MERGE[Aggregate Admin and Customer Data]
     MERGE --> FINAL[/Final Page Output<br/>Displayed to User/]
     FINAL --> SYS_END([End])
 ```
