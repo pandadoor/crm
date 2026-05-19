@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { StaffMember, Customer, ServiceMenuItem, Appointment, ServiceHistoryItem, SalonContextType, EmailNotification } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import type { StaffMember, Customer, ServiceMenuItem, Appointment, ServiceHistoryItem, SalonContextType, EmailNotification, UserRole, AuditLogEntry, AuditAction } from '../types';
 
 const SalonContext = createContext<SalonContextType | null>(null);
 
@@ -67,6 +67,25 @@ const GRADIENTS: GradientMap = {
   Nails: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
 };
 
+const ADMIN_EMAIL = 'admin@salon.com';
+
+function generateId(): number {
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+
+function generateAuditEntry(user: string, userRole: UserRole, action: AuditAction, details: string, entityType?: string, entityId?: string | number): AuditLogEntry {
+  return {
+    id: generateId(),
+    timestamp: new Date().toISOString(),
+    user,
+    userRole,
+    action,
+    details,
+    entityType,
+    entityId,
+  };
+}
+
 interface SalonProviderProps {
   children: ReactNode;
 }
@@ -83,6 +102,7 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
   });
 
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem('salon_customers');
@@ -94,32 +114,60 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    localStorage.setItem('salon_services', JSON.stringify(services));
-  }, [services]);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(() => {
+    const saved = localStorage.getItem('salon_audit_log');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  useEffect(() => {
-    localStorage.setItem('salon_appointments', JSON.stringify(appointments));
-  }, [appointments]);
+  const [serviceMenu, setServiceMenu] = useState<ServiceMenuItem[]>(() => {
+    const saved = localStorage.getItem('salon_service_menu');
+    return saved ? JSON.parse(saved) : SERVICE_MENU;
+  });
 
-  useEffect(() => {
-    localStorage.setItem('salon_customers', JSON.stringify(customers));
-  }, [customers]);
+  const [timeSlots, setTimeSlots] = useState<string[]>(() => {
+    const saved = localStorage.getItem('salon_time_slots');
+    return saved ? JSON.parse(saved) : TIME_SLOTS;
+  });
 
-  useEffect(() => {
-    localStorage.setItem('salon_email_log', JSON.stringify(emailLog));
-  }, [emailLog]);
+  const [staffList, setStaffList] = useState<StaffMember[]>(() => {
+    const saved = localStorage.getItem('salon_staff_list');
+    return saved ? JSON.parse(saved) : STAFF;
+  });
 
-  const recordService = (newService: Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string }) => {
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem('salon_categories');
+    return saved ? JSON.parse(saved) : CATEGORIES;
+  });
+
+  useEffect(() => { localStorage.setItem('salon_services', JSON.stringify(services)); }, [services]);
+  useEffect(() => { localStorage.setItem('salon_appointments', JSON.stringify(appointments)); }, [appointments]);
+  useEffect(() => { localStorage.setItem('salon_customers', JSON.stringify(customers)); }, [customers]);
+  useEffect(() => { localStorage.setItem('salon_email_log', JSON.stringify(emailLog)); }, [emailLog]);
+  useEffect(() => { localStorage.setItem('salon_audit_log', JSON.stringify(auditLog)); }, [auditLog]);
+  useEffect(() => { localStorage.setItem('salon_service_menu', JSON.stringify(serviceMenu)); }, [serviceMenu]);
+  useEffect(() => { localStorage.setItem('salon_time_slots', JSON.stringify(timeSlots)); }, [timeSlots]);
+  useEffect(() => { localStorage.setItem('salon_staff_list', JSON.stringify(staffList)); }, [staffList]);
+  useEffect(() => { localStorage.setItem('salon_categories', JSON.stringify(categories)); }, [categories]);
+
+  const addAuditEntry = useCallback((action: AuditAction, details: string, entityType?: string, entityId?: string | number) => {
+    const entry = generateAuditEntry(currentUser || 'system', currentUserRole || 'client', action, details, entityType, entityId);
+    setAuditLog(prev => [entry, ...prev]);
+  }, [currentUser, currentUserRole]);
+
+  const recordService = useCallback((newService: Omit<ServiceHistoryItem, 'id' | 'gradient'> & { gradient?: string }) => {
     setServices(prev => [{
       ...newService,
-      id: Date.now(),
+      id: generateId(),
       gradient: newService.gradient || GRADIENTS[newService.category] || GRADIENTS.Hair
     } as ServiceHistoryItem, ...prev]);
-  };
+    addAuditEntry('record_service', `Service "${newService.serviceType}" recorded for ${newService.customerId}`, 'service', newService.customerId);
+  }, [addAuditEntry]);
 
-  const sendEmailNotification = (type: EmailNotification['type'], to: string, appointmentId?: number) => {
+  const sendEmailNotification = useCallback((type: EmailNotification['type'], to: string, appointmentId?: number) => {
     const subjectMap: Record<string, string> = {
+      booking_pending: 'New Booking Request - Pending Approval',
+      booking_approved: 'Your Appointment has been Approved',
+      booking_rejected: 'Appointment Request Declined',
       booking_confirmed: 'Your Appointment is Confirmed',
       booking_cancelled: 'Appointment Cancelled',
       booking_completed: 'Appointment Completed - Thank You!',
@@ -127,6 +175,9 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
       reminder: 'Reminder: Upcoming Appointment Tomorrow',
     };
     const bodyMap: Record<string, string> = {
+      booking_pending: 'A new booking request requires your review. Please log in to approve or decline.',
+      booking_approved: 'Great news! Your appointment request has been approved. We look forward to seeing you!',
+      booking_rejected: 'Unfortunately, your appointment request has been declined. Please try booking a different time or service.',
       booking_confirmed: 'Your appointment has been confirmed. We look forward to seeing you at the salon!',
       booking_cancelled: 'Your appointment has been cancelled as requested. If you need to reschedule, please book again.',
       booking_completed: 'Thank you for visiting! Your appointment has been completed. We hope to see you again soon.',
@@ -134,7 +185,7 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
       reminder: 'This is a friendly reminder of your upcoming appointment tomorrow. See you soon!',
     };
     setEmailLog(prev => [{
-      id: Date.now(),
+      id: generateId(),
       to,
       subject: subjectMap[type],
       body: bodyMap[type],
@@ -142,32 +193,36 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
       type,
       appointmentId,
     }, ...prev]);
-  };
+  }, []);
 
-  const bookAppointment = (appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => {
-    const id = Date.now();
+  const bookAppointment = useCallback((appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => {
+    const id = generateId();
     setAppointments(prev => [{
       ...appointment,
       id,
-      status: 'confirmed',
+      status: 'pending',
       createdAt: new Date().toISOString()
     } as Appointment, ...prev]);
-    sendEmailNotification('booking_confirmed', appointment.customerId, id);
+    sendEmailNotification('booking_pending', ADMIN_EMAIL, id);
+    addAuditEntry('book_appointment', `Booking: ${appointment.service} for ${appointment.customerId} on ${appointment.date}`, 'appointment', id);
     return true;
-  };
+  }, [sendEmailNotification, addAuditEntry]);
 
-  const cancelAppointment = (id: number) => {
+  const cancelAppointment = useCallback((id: number) => {
     const apt = appointments.find(a => a.id === id);
     setAppointments(prev => prev.map(a =>
       a.id === id ? { ...a, status: 'cancelled' as const } : a
     ));
-    if (apt) sendEmailNotification('booking_cancelled', apt.customerId, id);
-  };
+    if (apt) {
+      sendEmailNotification('booking_cancelled', apt.customerId, id);
+      addAuditEntry('cancel_appointment', `Appointment #${id} cancelled: ${apt.service}`, 'appointment', id);
+    }
+  }, [appointments, sendEmailNotification, addAuditEntry]);
 
-  const completeAppointment = (id: number) => {
+  const completeAppointment = useCallback((id: number) => {
     const apt = appointments.find(a => a.id === id);
     if (apt) {
-      const service = SERVICE_MENU.find(s => s.name === apt.service);
+      const service = serviceMenu.find(s => s.name === apt.service);
       recordService({
         customerId: apt.customerId,
         serviceType: apt.service,
@@ -182,20 +237,62 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     setAppointments(prev => prev.map(a =>
       a.id === id ? { ...a, status: 'completed' as const } : a
     ));
-  };
+    addAuditEntry('complete_appointment', `Appointment #${id} marked completed`, 'appointment', id);
+  }, [appointments, serviceMenu, recordService, sendEmailNotification, addAuditEntry]);
 
-  const login = (email: string) => {
+  const approveBooking = useCallback((id: number) => {
+    setAppointments(prev => prev.map(a =>
+      a.id === id ? { ...a, status: 'approved' as const } : a
+    ));
+    const apt = appointments.find(a => a.id === id);
+    if (apt) {
+      sendEmailNotification('booking_approved', apt.customerId, id);
+      addAuditEntry('approve_booking', `Appointment #${id} approved: ${apt.service} for ${apt.customerId}`, 'appointment', id);
+    }
+  }, [appointments, sendEmailNotification, addAuditEntry]);
+
+  const rejectBooking = useCallback((id: number, reason: string) => {
+    setAppointments(prev => prev.map(a =>
+      a.id === id ? { ...a, status: 'rejected' as const, rejectionReason: reason } : a
+    ));
+    const apt = appointments.find(a => a.id === id);
+    if (apt) {
+      sendEmailNotification('booking_rejected', apt.customerId, id);
+      addAuditEntry('reject_booking', `Appointment #${id} rejected: ${reason}`, 'appointment', id);
+    }
+  }, [appointments, sendEmailNotification, addAuditEntry]);
+
+  const createWalkIn = useCallback((appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => {
+    const id = generateId();
+    setAppointments(prev => [{
+      ...appointment,
+      id,
+      status: 'approved',
+      isWalkIn: true,
+      createdAt: new Date().toISOString()
+    } as Appointment, ...prev]);
+    sendEmailNotification('booking_confirmed', appointment.customerId, id);
+    addAuditEntry('walk_in_booking', `Walk-in: ${appointment.service} for ${appointment.customerName || appointment.customerId}`, 'appointment', id);
+  }, [sendEmailNotification, addAuditEntry]);
+
+  const login = useCallback((email: string, role: UserRole) => {
     setCurrentUser(email);
-  };
+    setCurrentUserRole(role);
+    addAuditEntry('login', `User ${email} logged in as ${role}`);
+  }, [addAuditEntry]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    if (currentUser) {
+      addAuditEntry('logout', `User ${currentUser} logged out`);
+    }
     setCurrentUser(null);
-  };
+    setCurrentUserRole(null);
+  }, [currentUser, addAuditEntry]);
 
-  const registerCustomer = (name: string, email: string, phone: string): boolean => {
+  const registerCustomer = useCallback((name: string, email: string, phone: string): boolean => {
     if (customers.some(c => c.email === email)) return false;
     const newCustomer: Customer = {
-      id: Date.now(),
+      id: generateId(),
       name,
       email,
       phone,
@@ -205,17 +302,60 @@ export const SalonProvider = ({ children }: SalonProviderProps) => {
     };
     setCustomers(prev => [...prev, newCustomer]);
     setCurrentUser(email);
+    setCurrentUserRole('client');
+    addAuditEntry('create_customer', `Customer created: ${name} (${email})`, 'customer', email);
     return true;
-  };
+  }, [customers, addAuditEntry]);
+
+  const updateServiceMenu = useCallback((services: ServiceMenuItem[]) => {
+    setServiceMenu(services);
+    addAuditEntry('update_service', 'Service menu updated');
+  }, [addAuditEntry]);
+
+  const updateTimeSlots = useCallback((slots: string[]) => {
+    setTimeSlots(slots);
+    addAuditEntry('update_time_slot', `Time slots updated: ${slots.length} slots`);
+  }, [addAuditEntry]);
+
+  const updateStaffList = useCallback((staffList: StaffMember[]) => {
+    setStaffList(staffList);
+    addAuditEntry('update_staff', `Staff list updated: ${staffList.length} members`);
+  }, [addAuditEntry]);
+
+  const updateCategories = useCallback((cats: string[]) => {
+    setCategories(cats);
+    addAuditEntry('update_category', `Categories updated: ${cats.join(', ')}`);
+  }, [addAuditEntry]);
+
+  const addServiceMenuItem = useCallback((item: Omit<ServiceMenuItem, 'id'>) => {
+    const newItem = { ...item, id: generateId() };
+    setServiceMenu(prev => [...prev, newItem]);
+    addAuditEntry('create_service', `Service created: ${item.name}`);
+  }, [addAuditEntry]);
+
+  const deleteServiceMenuItem = useCallback((id: number) => {
+    const item = serviceMenu.find(s => s.id === id);
+    setServiceMenu(prev => prev.filter(s => s.id !== id));
+    if (item) {
+      addAuditEntry('delete_service', `Service deleted: ${item.name}`);
+    }
+  }, [serviceMenu, addAuditEntry]);
 
   return (
     <SalonContext.Provider value={{
-      services, categories: CATEGORIES, recordService,
+      services, categories, recordService,
       appointments, bookAppointment, cancelAppointment, completeAppointment,
-      staff: STAFF, customers,
-      serviceMenu: SERVICE_MENU, timeSlots: TIME_SLOTS,
-      currentUser, login, logout, registerCustomer,
-      emailLog, sendEmailNotification
+      approveBooking, rejectBooking, createWalkIn,
+      staff: staffList, customers,
+      serviceMenu, timeSlots,
+      currentUser, currentUserRole,
+      isAdmin: currentUserRole === 'admin',
+      isStaff: currentUserRole === 'staff' || currentUserRole === 'admin',
+      login, logout, registerCustomer,
+      emailLog, sendEmailNotification,
+      auditLog,
+      updateServiceMenu, updateTimeSlots, updateStaffList, updateCategories,
+      addServiceMenuItem, deleteServiceMenuItem,
     }}>
       {children}
     </SalonContext.Provider>

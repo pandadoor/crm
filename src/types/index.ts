@@ -1,3 +1,26 @@
+export type UserRole = 'admin' | 'staff' | 'client';
+
+export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+
+export type AuditAction =
+  | 'login' | 'logout' | 'create_customer'
+  | 'book_appointment' | 'approve_booking' | 'reject_booking'
+  | 'cancel_appointment' | 'complete_appointment'
+  | 'record_service' | 'walk_in_booking'
+  | 'update_service' | 'update_time_slot' | 'update_staff' | 'update_category'
+  | 'create_service' | 'delete_service';
+
+export interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  user: string;
+  userRole: UserRole;
+  action: AuditAction;
+  details: string;
+  entityType?: string;
+  entityId?: string | number;
+}
+
 export interface ServiceHistoryItem {
   id: string | number;
   customerId: string;
@@ -26,7 +49,7 @@ export interface EmailNotification {
   subject: string;
   body: string;
   sentAt: string;
-  type: 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'service_recorded' | 'reminder';
+  type: 'booking_pending' | 'booking_approved' | 'booking_rejected' | 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'service_recorded' | 'reminder';
   appointmentId?: number;
 }
 
@@ -59,8 +82,18 @@ export interface Appointment {
   duration: string;
   category: string;
   customerId: string;
-  status: 'confirmed' | 'cancelled' | 'completed';
+  customerName?: string;
+  status: BookingStatus;
+  rejectionReason?: string;
+  isWalkIn?: boolean;
   createdAt: string;
+}
+
+export interface SystemConfig {
+  services: ServiceMenuItem[];
+  timeSlots: string[];
+  staff: StaffMember[];
+  categories: string[];
 }
 
 export interface SalonContextType {
@@ -71,14 +104,27 @@ export interface SalonContextType {
   bookAppointment: (appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => boolean;
   cancelAppointment: (id: number) => void;
   completeAppointment: (id: number) => void;
+  approveBooking: (id: number) => void;
+  rejectBooking: (id: number, reason: string) => void;
+  createWalkIn: (appointment: Omit<Appointment, 'id' | 'status' | 'createdAt'>) => void;
   staff: StaffMember[];
   customers: Customer[];
   serviceMenu: ServiceMenuItem[];
   timeSlots: string[];
   currentUser: string | null;
-  login: (email: string) => void;
+  currentUserRole: UserRole | null;
+  isAdmin: boolean;
+  isStaff: boolean;
+  login: (email: string, role: UserRole) => void;
   logout: () => void;
   registerCustomer: (name: string, email: string, phone: string) => boolean;
   emailLog: EmailNotification[];
   sendEmailNotification: (type: EmailNotification['type'], to: string, appointmentId?: number) => void;
+  auditLog: AuditLogEntry[];
+  updateServiceMenu: (services: ServiceMenuItem[]) => void;
+  updateTimeSlots: (slots: string[]) => void;
+  updateStaffList: (staffList: StaffMember[]) => void;
+  updateCategories: (cats: string[]) => void;
+  addServiceMenuItem: (item: Omit<ServiceMenuItem, 'id'>) => void;
+  deleteServiceMenuItem: (id: number) => void;
 }

@@ -6,6 +6,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Login = lazy(() => import('./pages/Login'));
 const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 
 function LoadingFallback() {
   return (
@@ -38,6 +39,7 @@ function AnimatedRoutes() {
             <Route path="/login" element={<Login />} />
             <Route path="/customer" element={<CustomerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/staff" element={<StaffDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, User, Lock, Sparkles, ShieldCheck, Scissors, ArrowLeft, UserPlus, Mail, Phone } from 'lucide-react';
+import { LogIn, User, Lock, Sparkles, ShieldCheck, Scissors, ArrowLeft, UserPlus, Mail, Phone, BadgeCheck } from 'lucide-react';
 import { useSalon } from '../context/SalonContext';
+import type { UserRole } from '../types';
+
+const STAFF_EMAIL = 'staff@salon.com';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer');
+  const [role, setRole] = useState<UserRole>('client');
   const [isRegistering, setIsRegistering] = useState(false);
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -18,9 +21,11 @@ export default function Login() {
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
-    login(email);
+    login(email, role);
     if (role === 'admin' || email === 'admin@salon.com') {
       navigate('/admin');
+    } else if (role === 'staff' || email === STAFF_EMAIL) {
+      navigate('/staff');
     } else {
       navigate('/customer');
     }
@@ -36,6 +41,12 @@ export default function Login() {
       setRegError('An account with this email already exists.');
     }
   };
+
+  const roleOptions: { id: UserRole; label: string; icon: typeof User; desc: string }[] = [
+    { id: 'admin', label: 'Admin', icon: ShieldCheck, desc: 'System management' },
+    { id: 'staff', label: 'Staff', icon: BadgeCheck, desc: 'Service operations' },
+    { id: 'client', label: 'Client', icon: User, desc: 'Book & track services' },
+  ];
 
   return (
     <div className="layout-container" style={{
@@ -93,21 +104,19 @@ export default function Login() {
 
         {!isRegistering && (
           <div style={{ display: 'flex', gap: 8 }}>
-            {([
-              { id: 'customer', label: 'Customer', icon: User },
-              { id: 'admin', label: 'Admin', icon: ShieldCheck },
-            ] as const).map(r => (
+            {roleOptions.map(r => (
               <button key={r.id} onClick={() => setRole(r.id)}
                 style={{
-                  flex: 1, padding: '12px', borderRadius: 10, cursor: 'pointer',
+                  flex: 1, padding: '10px 4px', borderRadius: 10, cursor: 'pointer',
                   border: `1px solid ${role === r.id ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.06)'}`,
                   background: role === r.id ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.02)',
-                  color: 'white', fontSize: 13, fontWeight: 600,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  color: 'white', fontSize: 11, fontWeight: 600,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   transition: 'all 0.2s'
                 }}>
                 <r.icon size={16} color={role === r.id ? '#8b5cf6' : 'var(--text-secondary)'} />
                 {r.label}
+                <span style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 400 }}>{r.desc}</span>
               </button>
             ))}
           </div>
@@ -132,7 +141,7 @@ export default function Login() {
                 type="submit" className="premium-btn"
                 style={{ padding: 14, fontSize: 15, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <LogIn size={18} />
-                {role === 'admin' ? 'Access Admin Portal' : 'Enter Customer Dashboard'}
+                {role === 'admin' ? 'Access Admin Portal' : role === 'staff' ? 'Access Staff Portal' : 'Enter Customer Dashboard'}
               </motion.button>
             </form>
 
@@ -142,7 +151,7 @@ export default function Login() {
               fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6
             }}>
               <strong style={{ color: '#8b5cf6' }}>Demo Accounts:</strong><br />
-              Customer: <strong>customer@example.com</strong> | Admin: <strong>admin@salon.com</strong><br />
+              Client: <strong>customer@example.com</strong> · Staff: <strong>staff@salon.com</strong> · Admin: <strong>admin@salon.com</strong><br />
               <span style={{ fontSize: 11 }}>(Any password works)</span>
             </div>
 
@@ -152,7 +161,7 @@ export default function Login() {
                 fontSize: 13, textAlign: 'center', padding: 0
               }}>
               <UserPlus size={14} style={{ marginRight: 6, display: 'inline' }} />
-              New customer? Create an account
+              New client? Create an account
             </button>
           </>
         ) : (
